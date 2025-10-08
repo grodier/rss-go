@@ -1,7 +1,16 @@
 package main
 
-import "fmt"
+import (
+	"context"
+	"log/slog"
+	"os"
+)
 
 func main() {
-	fmt.Println("Hello, World!")
+	ctx := context.Background()
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	if err := NewApplication().Run(ctx, logger, os.Args[1:]); err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
 }
