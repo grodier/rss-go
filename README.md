@@ -1,0 +1,1 @@
+Go project to play around with RSS and demo building a real application (maybe with some AI mixed in), but using sound engineering principles that will be documented and iterated on as the project grows.
