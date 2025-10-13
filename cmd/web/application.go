@@ -18,7 +18,7 @@ func NewApplication() *Application {
 func (app *Application) Run(ctx context.Context, logger *slog.Logger, args []string) error {
 	fmt.Println("Hello, World!")
 
-	srv := server.NewServer()
+	srv := server.NewServer(logger)
 	if err := srv.Serve(); err != nil {
 		return err
 	}
