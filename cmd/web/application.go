@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log/slog"
 
 	"github.com/grodier/rss-go/internal/server"
@@ -48,6 +49,11 @@ func (app *Application) Run(ctx context.Context, logger *slog.Logger, args []str
 
 func (app *Application) ParseConfigs(args []string) config {
 	config := defaultConfig()
+
+	fs := flag.NewFlagSet("rss-go", flag.ContinueOnError)
+	fs.IntVar(&config.server.port, "port", config.server.port, "Server port")
+
+	fs.Parse(args)
 
 	return config
 }

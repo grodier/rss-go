@@ -19,7 +19,7 @@ confirm:
 ## run/api: run the cmd/api application
 .PHONY: run/web
 run/web:
-	go run ./cmd/web
+	go run ./cmd/web -port 8080
 
 # ==================================================================================== #
 # QUALITY CONTROL
