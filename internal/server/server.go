@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -14,6 +15,8 @@ import (
 )
 
 type Server struct {
+	Port int
+
 	server *http.Server
 	logger *slog.Logger
 }
@@ -29,7 +32,7 @@ func NewServer(logger *slog.Logger) *Server {
 
 func (s *Server) Serve() error {
 	s.server.Handler = s.routes()
-	s.server.Addr = ":8080"
+	s.server.Addr = fmt.Sprintf(":%d", s.Port)
 	s.server.IdleTimeout = time.Minute
 	s.server.ReadTimeout = 5 * time.Second
 	s.server.WriteTimeout = 10 * time.Second
@@ -50,7 +53,7 @@ func (s *Server) Serve() error {
 		shutdownError <- err
 	}()
 
-	s.logger.Info("starting server", "addr", ":8080", "env", "dev")
+	s.logger.Info("starting server", "addr", s.Port, "env", "dev")
 
 	err := s.server.ListenAndServe()
 	if !errors.Is(err, http.ErrServerClosed) {
