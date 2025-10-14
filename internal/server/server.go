@@ -16,6 +16,7 @@ import (
 
 type Server struct {
 	Port int
+	Env  string
 
 	server *http.Server
 	logger *slog.Logger
@@ -53,7 +54,7 @@ func (s *Server) Serve() error {
 		shutdownError <- err
 	}()
 
-	s.logger.Info("starting server", "addr", s.Port, "env", "dev")
+	s.logger.Info("starting server", "addr", s.Port, "env", s.Env)
 
 	err := s.server.ListenAndServe()
 	if !errors.Is(err, http.ErrServerClosed) {
@@ -65,7 +66,7 @@ func (s *Server) Serve() error {
 		return err
 	}
 
-	s.logger.Info("stopped server", "addr", "dev")
+	s.logger.Info("stopped server", "addr", s.server.Addr, "env", s.Env)
 
 	return nil
 }
