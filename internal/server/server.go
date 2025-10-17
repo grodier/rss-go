@@ -74,9 +74,15 @@ func (s *Server) Serve() error {
 func (s *Server) routes() http.Handler {
 	router := httprouter.New()
 
+	router.HandlerFunc(http.MethodGet, "/", s.handleRootView)
 	router.HandlerFunc(http.MethodGet, "/api/v1/healthcheck", s.handleHealthcheck)
 
 	return router
+}
+
+func (s *Server) handleRootView(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Hello, World!"))
 }
 
 func (s *Server) handleHealthcheck(w http.ResponseWriter, r *http.Request) {
