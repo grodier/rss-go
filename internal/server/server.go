@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"html/template"
+	"log"
 	"log/slog"
 	"net/http"
 	"os"
@@ -11,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/grodier/rss-go/internal/tmpl"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -18,14 +21,16 @@ type Server struct {
 	Port int
 	Env  string
 
-	server *http.Server
-	logger *slog.Logger
+	template *template.Template
+	server   *http.Server
+	logger   *slog.Logger
 }
 
 func NewServer(logger *slog.Logger) *Server {
 	s := &Server{
-		server: &http.Server{},
-		logger: logger,
+		template: tmpl.NewTmpl(),
+		server:   &http.Server{},
+		logger:   logger,
 	}
 
 	return s
@@ -74,9 +79,19 @@ func (s *Server) Serve() error {
 func (s *Server) routes() http.Handler {
 	router := httprouter.New()
 
+	router.HandlerFunc(http.MethodGet, "/", s.handleRootView)
 	router.HandlerFunc(http.MethodGet, "/api/v1/healthcheck", s.handleHealthcheck)
 
 	return router
+}
+
+func (s *Server) handleRootView(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	err := s.template.ExecuteTemplate(w, "root.tmpl.html", nil)
+	if err != nil {
+		log.Print(err.Error())
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
 }
 
 func (s *Server) handleHealthcheck(w http.ResponseWriter, r *http.Request) {
