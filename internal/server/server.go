@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
-	"log"
 	"log/slog"
 	"net/http"
 	"os"
@@ -86,12 +85,7 @@ func (s *Server) routes() http.Handler {
 }
 
 func (s *Server) handleRootView(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	err := s.template.ExecuteTemplate(w, "root.tmpl.html", nil)
-	if err != nil {
-		log.Print(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-	}
+	s.render(w, r, http.StatusOK, "root.tmpl.html", nil)
 }
 
 func (s *Server) handleHealthcheck(w http.ResponseWriter, r *http.Request) {
