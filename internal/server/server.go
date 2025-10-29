@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/grodier/rss-go/internal/tmpl"
-	"github.com/julienschmidt/httprouter"
 )
 
 type Server struct {
@@ -36,7 +35,7 @@ func NewServer(logger *slog.Logger) *Server {
 }
 
 func (s *Server) Serve() error {
-	s.server.Handler = s.routes()
+	s.server.Handler = s.router()
 	s.server.Addr = fmt.Sprintf(":%d", s.Port)
 	s.server.IdleTimeout = time.Minute
 	s.server.ReadTimeout = 5 * time.Second
@@ -75,15 +74,6 @@ func (s *Server) Serve() error {
 	return nil
 }
 
-func (s *Server) routes() http.Handler {
-	router := httprouter.New()
-
-	router.HandlerFunc(http.MethodGet, "/", s.handleRootView)
-	router.HandlerFunc(http.MethodGet, "/api/v1/healthcheck", s.handleHealthcheck)
-
-	return router
-}
-
 func (s *Server) handleRootView(w http.ResponseWriter, r *http.Request) {
 	s.render(w, r, http.StatusOK, "root.tmpl.html", nil)
 }
@@ -91,4 +81,27 @@ func (s *Server) handleRootView(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleHealthcheck(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("OK"))
+}
+
+func (s *Server) handleFeedView(w http.ResponseWriter, r *http.Request) {
+	id, err := s.readIDParam(r)
+
+	// in future want to return a better msg/page to user
+	// and wrap the functionality in utility of some sort
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	data := struct {
+		ID int64
+	}{
+		ID: id,
+	}
+
+	s.render(w, r, http.StatusOK, "feed.tmpl.html", data)
+}
+
+func (s *Server) handleFeedCreate(w http.ResponseWriter, r *http.Request) {
+	s.render(w, r, http.StatusOK, "feed_create.tmpl.html", nil)
 }
