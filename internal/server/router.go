@@ -1,0 +1,19 @@
+package server
+
+import (
+	"net/http"
+
+	"github.com/julienschmidt/httprouter"
+)
+
+func (s *Server) router() http.Handler {
+	router := httprouter.New()
+
+	router.HandlerFunc(http.MethodGet, "/", s.handleRootView)
+	router.HandlerFunc(http.MethodGet, "/feed/view/:id", s.handleFeedView)
+	router.HandlerFunc(http.MethodGet, "/feed/create", s.handleFeedCreate)
+
+	router.HandlerFunc(http.MethodGet, "/api/v1/healthcheck", s.handleHealthcheck)
+
+	return router
+}
