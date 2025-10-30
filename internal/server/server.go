@@ -105,3 +105,8 @@ func (s *Server) handleFeedView(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleFeedCreate(w http.ResponseWriter, r *http.Request) {
 	s.render(w, r, http.StatusOK, "feed_create.tmpl.html", nil)
 }
+
+func (s *Server) handleFeedCreatePost(w http.ResponseWriter, r *http.Request) {
+	// For now, just redirect back to the create page
+	http.Redirect(w, r, "/feed/create", http.StatusSeeOther)
+}

@@ -12,7 +12,7 @@ func (s *Server) router() http.Handler {
 	router.HandlerFunc(http.MethodGet, "/", s.handleRootView)
 	router.HandlerFunc(http.MethodGet, "/feed/view/:id", s.handleFeedView)
 	router.HandlerFunc(http.MethodGet, "/feed/create", s.handleFeedCreate)
-
+	router.HandlerFunc(http.MethodPost, "/feed/create", s.handleFeedCreatePost)
 	router.HandlerFunc(http.MethodGet, "/api/v1/healthcheck", s.handleHealthcheck)
 
 	return router
