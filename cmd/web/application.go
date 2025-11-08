@@ -5,6 +5,7 @@ import (
 	"flag"
 	"log/slog"
 
+	"github.com/grodier/rss-go/internal/inmem"
 	"github.com/grodier/rss-go/internal/server"
 )
 
@@ -44,6 +45,10 @@ func (app *Application) Run(ctx context.Context, args []string) error {
 	srv := server.NewServer(app.logger)
 	srv.Port = app.config.server.port
 	srv.Env = app.config.env
+
+	feedService := inmem.NewFeedService()
+
+	srv.FeedService = feedService
 
 	if err := srv.Serve(); err != nil {
 		return err
