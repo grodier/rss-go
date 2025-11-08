@@ -12,12 +12,15 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/grodier/rss-go/internal/models"
 	"github.com/grodier/rss-go/internal/tmpl"
 )
 
 type Server struct {
 	Port int
 	Env  string
+
+	FeedService models.FeedService
 
 	template *template.Template
 	server   *http.Server
@@ -107,6 +110,19 @@ func (s *Server) handleFeedCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleFeedCreatePost(w http.ResponseWriter, r *http.Request) {
+	var newFeed models.Feed
+
+	title := "New Feed title"
+	description := "Description for a new feed"
+
+	newFeed.Title = title
+	newFeed.Description = description
+
+	if err := s.FeedService.CreateFeed(&newFeed); err != nil {
+		s.serverError(w, r, err)
+		return
+	}
+
 	// For now, just redirect back to the create page
-	http.Redirect(w, r, "/feed/create", http.StatusSeeOther)
+	http.Redirect(w, r, fmt.Sprintf("/feed/view/%d", newFeed.ID), http.StatusSeeOther)
 }
