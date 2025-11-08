@@ -123,6 +123,5 @@ func (s *Server) handleFeedCreatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// For now, just redirect back to the create page
 	http.Redirect(w, r, fmt.Sprintf("/feed/view/%d", newFeed.ID), http.StatusSeeOther)
 }

@@ -1,6 +1,10 @@
 package inmem
 
-import "github.com/grodier/rss-go/internal/models"
+import (
+	"time"
+
+	"github.com/grodier/rss-go/internal/models"
+)
 
 type FeedService struct{}
 
@@ -10,6 +14,8 @@ func NewFeedService() *FeedService {
 
 func (s *FeedService) CreateFeed(feed *models.Feed) error {
 	feed.ID = 1
+	feed.CreatedAt = time.Now()
+
 	return nil
 }
 
