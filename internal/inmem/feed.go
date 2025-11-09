@@ -1,7 +1,6 @@
 package inmem
 
 import (
-	"errors"
 	"time"
 
 	"github.com/grodier/rss-go/internal/models"
@@ -29,7 +28,7 @@ func (s *FeedService) GetFeedByID(id int) (*models.Feed, error) {
 			return feed, nil
 		}
 	}
-	return nil, errors.New("no matching record found")
+	return nil, models.ErrNoRecord
 }
 
 func (s *FeedService) GetLatestFeeds() ([]*models.Feed, error) {

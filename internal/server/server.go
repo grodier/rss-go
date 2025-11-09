@@ -96,10 +96,24 @@ func (s *Server) handleFeedView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	feed, err := s.FeedService.GetFeedByID(int(id))
+	if err != nil {
+		if errors.Is(err, models.ErrNoRecord) {
+			http.NotFound(w, r)
+		} else {
+			s.serverError(w, r, err)
+		}
+		return
+	}
+
 	data := struct {
-		ID int64
+		ID          int
+		Title       string
+		Description string
 	}{
-		ID: id,
+		ID:          feed.ID,
+		Title:       feed.Title,
+		Description: feed.Description,
 	}
 
 	s.render(w, r, http.StatusOK, "feed.tmpl.html", data)
