@@ -77,13 +77,25 @@ func (s *Server) Serve() error {
 	return nil
 }
 
-func (s *Server) handleRootView(w http.ResponseWriter, r *http.Request) {
-	s.render(w, r, http.StatusOK, "root.tmpl.html", nil)
-}
-
 func (s *Server) handleHealthcheck(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("OK"))
+}
+
+func (s *Server) handleRootView(w http.ResponseWriter, r *http.Request) {
+	feeds, err := s.FeedService.GetLatestFeeds()
+	if err != nil {
+		s.serverError(w, r, err)
+		return
+	}
+
+	data := struct {
+		Feeds []*models.Feed
+	}{
+		Feeds: feeds,
+	}
+
+	s.render(w, r, http.StatusOK, "root.tmpl.html", data)
 }
 
 func (s *Server) handleFeedView(w http.ResponseWriter, r *http.Request) {
