@@ -17,5 +17,5 @@ func (s *Server) router() http.Handler {
 	router.HandlerFunc(http.MethodPost, "/feed/create", s.handleFeedCreatePost)
 	router.HandlerFunc(http.MethodGet, "/api/v1/healthcheck", s.handleHealthcheck)
 
-	return router
+	return commonHeaders(router)
 }
