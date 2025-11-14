@@ -136,10 +136,16 @@ func (s *Server) handleFeedCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleFeedCreatePost(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		s.clientError(w, http.StatusBadRequest)
+		return
+	}
+
 	var newFeed models.Feed
 
-	title := "New Feed title"
-	description := "Description for a new feed"
+	title := r.PostForm.Get("title")
+	description := r.PostForm.Get("description")
 
 	newFeed.Title = title
 	newFeed.Description = description
