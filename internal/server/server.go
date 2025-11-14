@@ -9,8 +9,10 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
+	"unicode/utf8"
 
 	"github.com/grodier/rss-go/internal/models"
 	"github.com/grodier/rss-go/internal/tmpl"
@@ -146,6 +148,23 @@ func (s *Server) handleFeedCreatePost(w http.ResponseWriter, r *http.Request) {
 
 	title := r.PostForm.Get("title")
 	description := r.PostForm.Get("description")
+
+	fieldErrors := make(map[string]string)
+
+	if strings.TrimSpace(title) == "" {
+		fieldErrors["title"] = "This field cannot be blank"
+	} else if utf8.RuneCountInString(title) > 100 {
+		fieldErrors["title"] = "This field cannot be more than 100 characters long"
+	}
+
+	if strings.TrimSpace(description) == "" {
+		fieldErrors["description"] = "This field cannot be blank"
+	}
+
+	if len(fieldErrors) > 0 {
+		fmt.Fprint(w, fieldErrors)
+		return
+	}
 
 	newFeed.Title = title
 	newFeed.Description = description
