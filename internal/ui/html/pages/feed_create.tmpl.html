@@ -14,11 +14,17 @@
     <form action="/feed/create" method="POST">
       <div>
         <label>Title:</label>
-        <input type="text" name="title" />
+        <input type="text" name="title" value="{{.Feed.Title}}" />
+        {{with .FieldErrors.title}}
+        <span style="color: red">{{.}}</span>
+        {{end}}
       </div>
       <div>
         <label>Description:</label>
-        <textarea name="description"></textarea>
+        <textarea name="description">{{.Feed.Description}}</textarea>
+        {{with .FieldErrors.description}}
+        <span style="color: red">{{.}}</span>
+        {{end}}
       </div>
       <div>
         <input type="submit" value="Create Feed" />
