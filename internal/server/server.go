@@ -9,8 +9,10 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
+	"unicode/utf8"
 
 	"github.com/grodier/rss-go/internal/models"
 	"github.com/grodier/rss-go/internal/tmpl"
@@ -131,8 +133,13 @@ func (s *Server) handleFeedView(w http.ResponseWriter, r *http.Request) {
 	s.render(w, r, http.StatusOK, "feed.tmpl.html", data)
 }
 
+type feedCreateData struct {
+	Feed        models.Feed
+	FieldErrors map[string]string
+}
+
 func (s *Server) handleFeedCreate(w http.ResponseWriter, r *http.Request) {
-	s.render(w, r, http.StatusOK, "feed_create.tmpl.html", nil)
+	s.render(w, r, http.StatusOK, "feed_create.tmpl.html", feedCreateData{})
 }
 
 func (s *Server) handleFeedCreatePost(w http.ResponseWriter, r *http.Request) {
@@ -144,11 +151,30 @@ func (s *Server) handleFeedCreatePost(w http.ResponseWriter, r *http.Request) {
 
 	var newFeed models.Feed
 
-	title := r.PostForm.Get("title")
-	description := r.PostForm.Get("description")
+	newFeed.Title = r.PostForm.Get("title")
+	newFeed.Description = r.PostForm.Get("description")
 
-	newFeed.Title = title
-	newFeed.Description = description
+	fieldErrors := make(map[string]string)
+
+	if strings.TrimSpace(newFeed.Title) == "" {
+		fieldErrors["title"] = "This field cannot be blank"
+	} else if utf8.RuneCountInString(newFeed.Title) > 100 {
+		fieldErrors["title"] = "This field cannot be more than 100 characters long"
+	}
+
+	if strings.TrimSpace(newFeed.Description) == "" {
+		fieldErrors["description"] = "This field cannot be blank"
+	}
+
+	if len(fieldErrors) > 0 {
+		data := feedCreateData{
+			Feed:        newFeed,
+			FieldErrors: fieldErrors,
+		}
+
+		s.render(w, r, http.StatusUnprocessableEntity, "feed_create.tmpl.html", data)
+		return
+	}
 
 	if err := s.FeedService.CreateFeed(&newFeed); err != nil {
 		s.serverError(w, r, err)
