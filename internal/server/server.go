@@ -9,13 +9,12 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
-	"unicode/utf8"
 
 	"github.com/grodier/rss-go/internal/models"
 	"github.com/grodier/rss-go/internal/tmpl"
+	"github.com/grodier/rss-go/internal/validator"
 )
 
 type Server struct {
@@ -142,6 +141,7 @@ func (s *Server) handleFeedCreate(w http.ResponseWriter, r *http.Request) {
 	s.render(w, r, http.StatusOK, "feed_create.tmpl.html", feedCreateData{})
 }
 
+// TODO: consider moving validation to feed creation and reduce handler responsibilities
 func (s *Server) handleFeedCreatePost(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
@@ -154,22 +154,16 @@ func (s *Server) handleFeedCreatePost(w http.ResponseWriter, r *http.Request) {
 	newFeed.Title = r.PostForm.Get("title")
 	newFeed.Description = r.PostForm.Get("description")
 
-	fieldErrors := make(map[string]string)
+	var v validator.Validator
 
-	if strings.TrimSpace(newFeed.Title) == "" {
-		fieldErrors["title"] = "This field cannot be blank"
-	} else if utf8.RuneCountInString(newFeed.Title) > 100 {
-		fieldErrors["title"] = "This field cannot be more than 100 characters long"
-	}
+	v.Check(validator.NotBlank(newFeed.Title), "title", "This field cannot be blank")
+	v.Check(validator.MaxChars(newFeed.Title, 100), "title", "This field cannot be more than 100 characters long")
+	v.Check(validator.NotBlank(newFeed.Description), "description", "This field cannot be blank")
 
-	if strings.TrimSpace(newFeed.Description) == "" {
-		fieldErrors["description"] = "This field cannot be blank"
-	}
-
-	if len(fieldErrors) > 0 {
+	if !v.Valid() {
 		data := feedCreateData{
 			Feed:        newFeed,
-			FieldErrors: fieldErrors,
+			FieldErrors: v.FieldErrors,
 		}
 
 		s.render(w, r, http.StatusUnprocessableEntity, "feed_create.tmpl.html", data)
