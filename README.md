@@ -4,3 +4,4 @@ Go project to play around with RSS and demo building a real application (maybe w
 
 - Setting up http2 with whatever AWS infrastructure I deploy to
 - More complete logging solution controlled via a config, where do I want to store and explore logs, o11y solutions, etc
+- Better understanding of int vs int64 and when to use each
