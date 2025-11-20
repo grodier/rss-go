@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/go-playground/form/v4"
 	"github.com/grodier/rss-go/internal/models"
 	"github.com/grodier/rss-go/internal/tmpl"
 	"github.com/grodier/rss-go/internal/validator"
@@ -25,6 +26,7 @@ type Server struct {
 
 	template *template.Template
 	server   *http.Server
+	decoder  *form.Decoder
 	logger   *slog.Logger
 }
 
@@ -32,6 +34,7 @@ func NewServer(logger *slog.Logger) *Server {
 	s := &Server{
 		template: tmpl.NewTmpl(),
 		server:   &http.Server{},
+		decoder:  form.NewDecoder(),
 		logger:   logger,
 	}
 
@@ -143,16 +146,13 @@ func (s *Server) handleFeedCreate(w http.ResponseWriter, r *http.Request) {
 
 // TODO: consider moving validation to feed creation and reduce handler responsibilities
 func (s *Server) handleFeedCreatePost(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
+	var newFeed models.Feed
+
+	err := s.decodePostForm(r, &newFeed)
 	if err != nil {
 		s.clientError(w, http.StatusBadRequest)
 		return
 	}
-
-	var newFeed models.Feed
-
-	newFeed.Title = r.PostForm.Get("title")
-	newFeed.Description = r.PostForm.Get("description")
 
 	var v validator.Validator
 
