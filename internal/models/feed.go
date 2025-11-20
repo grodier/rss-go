@@ -3,10 +3,10 @@ package models
 import "time"
 
 type Feed struct {
-	ID          int
-	Title       string
-	Description string
-	CreatedAt   time.Time
+	ID          int       `form:"-"`
+	Title       string    `form:"title"`
+	Description string    `form:"description"`
+	CreatedAt   time.Time `form:"-"`
 }
 
 type FeedService interface {
