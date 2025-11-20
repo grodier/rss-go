@@ -33,9 +33,11 @@ type Server struct {
 func NewServer(logger *slog.Logger) *Server {
 	s := &Server{
 		template: tmpl.NewTmpl(),
-		server:   &http.Server{},
-		decoder:  form.NewDecoder(),
-		logger:   logger,
+		server: &http.Server{
+			ErrorLog: slog.NewLogLogger(logger.Handler(), slog.LevelError),
+		},
+		decoder: form.NewDecoder(),
+		logger:  logger,
 	}
 
 	return s
