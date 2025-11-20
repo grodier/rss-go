@@ -146,15 +146,9 @@ func (s *Server) handleFeedCreate(w http.ResponseWriter, r *http.Request) {
 
 // TODO: consider moving validation to feed creation and reduce handler responsibilities
 func (s *Server) handleFeedCreatePost(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
-	if err != nil {
-		s.clientError(w, http.StatusBadRequest)
-		return
-	}
-
 	var newFeed models.Feed
 
-	err = s.decoder.Decode(&newFeed, r.PostForm)
+	err := s.decodePostForm(r, &newFeed)
 	if err != nil {
 		s.clientError(w, http.StatusBadRequest)
 		return
