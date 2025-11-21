@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/alexedwards/scs/v2"
 	"github.com/go-playground/form/v4"
 	"github.com/grodier/rss-go/internal/models"
 	"github.com/grodier/rss-go/internal/tmpl"
@@ -24,20 +25,25 @@ type Server struct {
 
 	FeedService models.FeedService
 
-	template *template.Template
-	server   *http.Server
-	decoder  *form.Decoder
-	logger   *slog.Logger
+	template       *template.Template
+	server         *http.Server
+	decoder        *form.Decoder
+	logger         *slog.Logger
+	sessionManager *scs.SessionManager
 }
 
 func NewServer(logger *slog.Logger) *Server {
+	sessionManager := scs.New()
+	sessionManager.Lifetime = 12 * time.Hour
+
 	s := &Server{
 		template: tmpl.NewTmpl(),
 		server: &http.Server{
 			ErrorLog: slog.NewLogLogger(logger.Handler(), slog.LevelError),
 		},
-		decoder: form.NewDecoder(),
-		logger:  logger,
+		decoder:        form.NewDecoder(),
+		logger:         logger,
+		sessionManager: sessionManager,
 	}
 
 	return s
