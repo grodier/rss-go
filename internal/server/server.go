@@ -110,6 +110,11 @@ func (s *Server) handleRootView(w http.ResponseWriter, r *http.Request) {
 	s.render(w, r, http.StatusOK, "root.tmpl.html", data)
 }
 
+type feedViewData struct {
+	Feed  models.Feed
+	Flash string
+}
+
 func (s *Server) handleFeedView(w http.ResponseWriter, r *http.Request) {
 	id, err := s.readIDParam(r)
 
@@ -130,14 +135,9 @@ func (s *Server) handleFeedView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data := struct {
-		ID          int
-		Title       string
-		Description string
-	}{
-		ID:          feed.ID,
-		Title:       feed.Title,
-		Description: feed.Description,
+	data := feedViewData{
+		Feed:  *feed,
+		Flash: s.sessionManager.PopString(r.Context(), "flash"),
 	}
 
 	s.render(w, r, http.StatusOK, "feed.tmpl.html", data)
@@ -182,6 +182,8 @@ func (s *Server) handleFeedCreatePost(w http.ResponseWriter, r *http.Request) {
 		s.serverError(w, r, err)
 		return
 	}
+
+	s.sessionManager.Put(r.Context(), "flash", "Feed successfully created")
 
 	http.Redirect(w, r, fmt.Sprintf("/feed/view/%d", newFeed.ID), http.StatusSeeOther)
 }
