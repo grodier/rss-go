@@ -12,9 +12,12 @@
     <h1><a href="/">View Feed</a></h1>
   </header>
   <main>
-    <h2>{{.Title}}</h2>
-    <p><strong>Feed ID:</strong> {{.ID}}</p>
-    <p><strong>Description:</strong> {{.Description}}</p>
+    {{with .Flash}}
+    <div class="flash">{{.}}</div>
+    {{end}}
+    <h2>{{.Feed.Title}}</h2>
+    <p><strong>Feed ID:</strong> {{.Feed.ID}}</p>
+    <p><strong>Description:</strong> {{.Feed.Description}}</p>
   </main>
   <footer>Powered by <a href="https://golang.org/">Go</a></footer>
 </body>
