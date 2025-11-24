@@ -21,6 +21,12 @@ func (s *Server) router() http.Handler {
 	router.Handler(http.MethodGet, "/feed/create", dynamic.ThenFunc(s.handleFeedCreate))
 	router.Handler(http.MethodPost, "/feed/create", dynamic.ThenFunc(s.handleFeedCreatePost))
 
+	router.Handler(http.MethodGet, "/user/signup", dynamic.ThenFunc(s.handleUserSignUp))
+	router.Handler(http.MethodPost, "/user/signup", dynamic.ThenFunc(s.handleUserSignUpPost))
+	router.Handler(http.MethodGet, "/user/login", dynamic.ThenFunc(s.handleUserLogin))
+	router.Handler(http.MethodPost, "/user/login", dynamic.ThenFunc(s.handleUserLoginPost))
+	router.Handler(http.MethodPost, "/user/logout", dynamic.ThenFunc(s.handleUserLogoutPost))
+
 	standardHeaders := alice.New(s.recoverPanic, s.logRequest, commonHeaders)
 
 	return standardHeaders.Then(router)
