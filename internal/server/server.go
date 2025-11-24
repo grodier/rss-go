@@ -189,10 +189,16 @@ func (s *Server) handleFeedCreatePost(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, fmt.Sprintf("/feed/view/%d", newFeed.ID), http.StatusSeeOther)
 }
 
-func (s *Server) handleUserSignUp(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "handleUserSignUp not implemented yet")
+type userSignUpData struct {
+	User        models.User
+	FieldErrors map[string]string
 }
 
+func (s *Server) handleUserSignUp(w http.ResponseWriter, r *http.Request) {
+	s.render(w, r, http.StatusOK, "signup.tmpl.html", userSignUpData{})
+}
+
+// TODO: consider moving validation to user sign up and reduce handler responsibilities
 func (s *Server) handleUserSignUpPost(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "handleUserSignUpPost not implemented yet")
 }

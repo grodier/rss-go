@@ -3,11 +3,11 @@ package models
 import "time"
 
 type User struct {
-	ID             int
-	Name           string
-	Email          string
-	HashedPassword []byte
-	CreatedAt      time.Time
+	ID             int       `form:"-"`
+	Name           string    `form:"name"`
+	Email          string    `form:"email"`
+	HashedPassword []byte    `form:"-"`
+	CreatedAt      time.Time `form:"-"`
 }
 
 type UserService interface {
