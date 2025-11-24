@@ -187,3 +187,23 @@ func (s *Server) handleFeedCreatePost(w http.ResponseWriter, r *http.Request) {
 
 	http.Redirect(w, r, fmt.Sprintf("/feed/view/%d", newFeed.ID), http.StatusSeeOther)
 }
+
+func (s *Server) handleUserSignUp(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, "handleUserSignUp not implemented yet")
+}
+
+func (s *Server) handleUserSignUpPost(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, "handleUserSignUpPost not implemented yet")
+}
+
+func (s *Server) handleUserLogin(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, "handleUserLogin not implemented yet")
+}
+
+func (s *Server) handleUserLoginPost(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, "handleUserLoginPost not implemented yet")
+}
+
+func (s *Server) handleUserLogoutPost(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, "handleUserLogoutPost not implemented yet")
+}

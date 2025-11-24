@@ -11,20 +11,35 @@
     <h1><a href="/">RSS App</a></h1>
   </header>
   <main>
+    <nav>
+      <div>
+        <a href="/">Home</a>
+        <a href="/feed/create">Create Feed</a>
+      </div>
+      <div>
+        <a href="/user/signup">Signup</a>
+        <a href="/user/login">Login</a>
+        <form action="/user/logout" method="POST">
+          <button type="submit">Logout</button>
+        </form>
+      </div>
+    </nav>
     {{if eq (len .Feeds) 0}}
-      <p>No feeds exist yet. <a href="/feed/create">Create your first feed!</a></p>
+    <p>
+      No feeds exist yet. <a href="/feed/create">Create your first feed!</a>
+    </p>
     {{else}}
-      <h2>Latest Feeds</h2>
-      <ul>
-        {{range .Feeds}}
-          <li>
-            <a href="/feed/view/{{.ID}}">{{.Title}}</a>
-            {{if .Description}}
-              <p>{{.Description}}</p>
-            {{end}}
-          </li>
+    <h2>Latest Feeds</h2>
+    <ul>
+      {{range .Feeds}}
+      <li>
+        <a href="/feed/view/{{.ID}}">{{.Title}}</a>
+        {{if .Description}}
+        <p>{{.Description}}</p>
         {{end}}
-      </ul>
+      </li>
+      {{end}}
+    </ul>
     {{end}}
   </main>
   <footer>Powered by <a href="https://golang.org/">Go</a></footer>

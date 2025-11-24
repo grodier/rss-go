@@ -11,6 +11,19 @@
     <h1><a href="/">Create Feed</a></h1>
   </header>
   <main>
+    <nav>
+      <div>
+        <a href="/">Home</a>
+        <a href="/feed/create">Create Feed</a>
+      </div>
+      <div>
+        <a href="/user/signup">Signup</a>
+        <a href="/user/login">Login</a>
+        <form action="/user/logout" method="POST">
+          <button type="submit">Logout</button>
+        </form>
+      </div>
+    </nav>
     <form action="/feed/create" method="POST">
       <div>
         <label>Title:</label>
