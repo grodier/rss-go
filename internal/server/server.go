@@ -24,6 +24,7 @@ type Server struct {
 	Env  string
 
 	FeedService models.FeedService
+	UserService models.UserService
 
 	template       *template.Template
 	server         *http.Server

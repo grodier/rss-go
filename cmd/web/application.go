@@ -47,8 +47,10 @@ func (app *Application) Run(ctx context.Context, args []string) error {
 	srv.Env = app.config.env
 
 	feedService := inmem.NewFeedService()
+	userService := inmem.NewUserService()
 
 	srv.FeedService = feedService
+	srv.UserService = userService
 
 	if err := srv.Serve(); err != nil {
 		return err
