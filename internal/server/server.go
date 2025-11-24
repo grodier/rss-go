@@ -190,7 +190,7 @@ func (s *Server) handleFeedCreatePost(w http.ResponseWriter, r *http.Request) {
 }
 
 type userSignUpData struct {
-	User        models.User
+	User        models.UserInput
 	FieldErrors map[string]string
 }
 
@@ -200,7 +200,7 @@ func (s *Server) handleUserSignUp(w http.ResponseWriter, r *http.Request) {
 
 // TODO: consider moving validation to user sign up and reduce handler responsibilities
 func (s *Server) handleUserSignUpPost(w http.ResponseWriter, r *http.Request) {
-	var newUser models.User
+	var newUser models.UserInput
 
 	err := s.decodePostForm(r, &newUser)
 	if err != nil {
@@ -226,7 +226,26 @@ func (s *Server) handleUserSignUpPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintln(w, "create a new user...")
+	err = s.UserService.CreateUser(&newUser)
+	if err != nil {
+		if errors.Is(err, models.ErrDuplicateEmail) {
+			v.AddFieldError("email", "Email address is already in use")
+
+			data := userSignUpData{
+				User:        newUser,
+				FieldErrors: v.FieldErrors,
+			}
+
+			s.render(w, r, http.StatusUnprocessableEntity, "signup.tmpl.html", data)
+		} else {
+			s.serverError(w, r, err)
+		}
+		return
+	}
+
+	s.sessionManager.Put(r.Context(), "flash", "Your signup was successful. Please log in.")
+	s.logger.Info("Redirect?")
+	http.Redirect(w, r, "/user/login", http.StatusSeeOther)
 }
 
 func (s *Server) handleUserLogin(w http.ResponseWriter, r *http.Request) {
