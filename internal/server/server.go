@@ -200,7 +200,33 @@ func (s *Server) handleUserSignUp(w http.ResponseWriter, r *http.Request) {
 
 // TODO: consider moving validation to user sign up and reduce handler responsibilities
 func (s *Server) handleUserSignUpPost(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "handleUserSignUpPost not implemented yet")
+	var newUser models.User
+
+	err := s.decodePostForm(r, &newUser)
+	if err != nil {
+		s.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	var v validator.Validator
+
+	v.Check(validator.NotBlank(newUser.Name), "name", "This field cannot be blank")
+	v.Check(validator.NotBlank(newUser.Email), "email", "This field cannot be blank")
+	v.Check(validator.Matches(newUser.Email, validator.EmailRX), "email", "This field must be a valid email address")
+	v.Check(validator.NotBlank(r.PostForm.Get("password")), "password", "This field cannot be blank")
+	v.Check(validator.MinChars(r.PostForm.Get("password"), 8), "password", "This field must be at least 8 characters long")
+
+	if !v.Valid() {
+		data := userSignUpData{
+			User:        newUser,
+			FieldErrors: v.FieldErrors,
+		}
+
+		s.render(w, r, http.StatusUnprocessableEntity, "signup.tmpl.html", data)
+		return
+	}
+
+	fmt.Fprintln(w, "create a new user...")
 }
 
 func (s *Server) handleUserLogin(w http.ResponseWriter, r *http.Request) {
