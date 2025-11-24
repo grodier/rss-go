@@ -1,14 +1,42 @@
 package inmem
 
-import "github.com/grodier/rss-go/internal/models"
+import (
+	"time"
 
-type UserService struct{}
+	"github.com/grodier/rss-go/internal/models"
+	"golang.org/x/crypto/bcrypt"
+)
+
+type UserService struct {
+	users []*models.User
+}
 
 func NewUserService() *UserService {
 	return &UserService{}
 }
 
-func (s *UserService) CreateUser(user *models.User) error {
+func (s *UserService) CreateUser(user *models.UserInput) error {
+	for _, existingUser := range s.users {
+		if existingUser.Email == user.Email {
+			return models.ErrDuplicateEmail
+		}
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), 12)
+	if err != nil {
+		return err
+	}
+
+	newUser := &models.User{
+		ID:             len(s.users) + 1,
+		Name:           user.Name,
+		Email:          user.Email,
+		HashedPassword: hashedPassword,
+		CreatedAt:      time.Now(),
+	}
+
+	s.users = append(s.users, newUser)
+
 	return nil
 }
 

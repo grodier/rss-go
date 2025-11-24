@@ -189,12 +189,63 @@ func (s *Server) handleFeedCreatePost(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, fmt.Sprintf("/feed/view/%d", newFeed.ID), http.StatusSeeOther)
 }
 
-func (s *Server) handleUserSignUp(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "handleUserSignUp not implemented yet")
+type userSignUpData struct {
+	User        models.UserInput
+	FieldErrors map[string]string
 }
 
+func (s *Server) handleUserSignUp(w http.ResponseWriter, r *http.Request) {
+	s.render(w, r, http.StatusOK, "signup.tmpl.html", userSignUpData{})
+}
+
+// TODO: consider moving validation to user sign up and reduce handler responsibilities
 func (s *Server) handleUserSignUpPost(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "handleUserSignUpPost not implemented yet")
+	var newUser models.UserInput
+
+	err := s.decodePostForm(r, &newUser)
+	if err != nil {
+		s.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	var v validator.Validator
+
+	v.Check(validator.NotBlank(newUser.Name), "name", "This field cannot be blank")
+	v.Check(validator.NotBlank(newUser.Email), "email", "This field cannot be blank")
+	v.Check(validator.Matches(newUser.Email, validator.EmailRX), "email", "This field must be a valid email address")
+	v.Check(validator.NotBlank(r.PostForm.Get("password")), "password", "This field cannot be blank")
+	v.Check(validator.MinChars(r.PostForm.Get("password"), 8), "password", "This field must be at least 8 characters long")
+
+	if !v.Valid() {
+		data := userSignUpData{
+			User:        newUser,
+			FieldErrors: v.FieldErrors,
+		}
+
+		s.render(w, r, http.StatusUnprocessableEntity, "signup.tmpl.html", data)
+		return
+	}
+
+	err = s.UserService.CreateUser(&newUser)
+	if err != nil {
+		if errors.Is(err, models.ErrDuplicateEmail) {
+			v.AddFieldError("email", "Email address is already in use")
+
+			data := userSignUpData{
+				User:        newUser,
+				FieldErrors: v.FieldErrors,
+			}
+
+			s.render(w, r, http.StatusUnprocessableEntity, "signup.tmpl.html", data)
+		} else {
+			s.serverError(w, r, err)
+		}
+		return
+	}
+
+	s.sessionManager.Put(r.Context(), "flash", "Your signup was successful. Please log in.")
+	s.logger.Info("Redirect?")
+	http.Redirect(w, r, "/user/login", http.StatusSeeOther)
 }
 
 func (s *Server) handleUserLogin(w http.ResponseWriter, r *http.Request) {
