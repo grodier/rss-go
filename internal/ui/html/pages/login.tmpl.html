@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <title>Login</title>
+</head>
+
+<body>
+  <header>
+    <h1>Signup</h1>
+  </header>
+  <main>
+    <nav>
+      <div>
+        <a href="/">Home</a>
+        <a href="/feed/create">Create Feed</a>
+      </div>
+      <div>
+        <a href="/user/signup">Signup</a>
+        <a href="/user/login">Login</a>
+        <form action="/user/logout" method="POST">
+          <button type="submit">Logout</button>
+        </form>
+      </div>
+    </nav>
+    <form action="/user/signup" method="POST" novalidate>
+      {{range .NonFieldErrors}}
+      <div class="error">{{.}}</div>
+      {{end}}
+      <div>
+        <label>Email:</label>
+        {{with .FieldErrors.email}}
+        <label class="error">{{.}}</label>
+        {{end}}
+        <input type="email" name="email" value="{{.User.Email}}" />
+      </div>
+      <div>
+        <label>Password:</label>
+        {{with .FieldErrors.password}}
+        <label class="error">{{.}}</label>
+        {{end}}
+        <input type="password" name="password" />
+      </div>
+      <div>
+        <input type="submit" value="Login" />
+      </div>
+    </form>
+  </main>
+  <footer>Powered by <a href="https://golang.org/">Go</a></footer>
+</body>
+
+</html>

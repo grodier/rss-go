@@ -248,8 +248,14 @@ func (s *Server) handleUserSignUpPost(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/user/login", http.StatusSeeOther)
 }
 
+type userLoginData struct {
+	User           models.UserInput
+	FieldErrors    map[string]string
+	NonFieldErrors []string
+}
+
 func (s *Server) handleUserLogin(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "handleUserLogin not implemented yet")
+	s.render(w, r, http.StatusOK, "login.tmpl.html", userLoginData{})
 }
 
 func (s *Server) handleUserLoginPost(w http.ResponseWriter, r *http.Request) {
