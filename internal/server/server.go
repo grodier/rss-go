@@ -244,7 +244,6 @@ func (s *Server) handleUserSignUpPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.sessionManager.Put(r.Context(), "flash", "Your signup was successful. Please log in.")
-	s.logger.Info("Redirect?")
 	http.Redirect(w, r, "/user/login", http.StatusSeeOther)
 }
 
@@ -259,7 +258,44 @@ func (s *Server) handleUserLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleUserLoginPost(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "handleUserLoginPost not implemented yet")
+	var potentialUser models.UserInput
+
+	err := s.decodePostForm(r, &potentialUser)
+	if err != nil {
+		s.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	var v validator.Validator
+
+	v.Check(validator.NotBlank(potentialUser.Email), "email", "This field cannot be blank")
+	v.Check(validator.Matches(potentialUser.Email, validator.EmailRX), "email", "This field must be a valid email address")
+	v.Check(validator.NotBlank(potentialUser.Password), "password", "This field cannot be blank")
+
+	id, err := s.UserService.Authenticate(potentialUser.Email, potentialUser.Password)
+	if err != nil {
+		if errors.Is(err, models.ErrInvalidCredentials) {
+			v.AddNonFieldError("Email or password is incorrect")
+			data := userLoginData{
+				User:           potentialUser,
+				FieldErrors:    v.FieldErrors,
+				NonFieldErrors: v.NonFieldErrors,
+			}
+			s.render(w, r, http.StatusUnprocessableEntity, "login.tmpl.html", data)
+		} else {
+			s.serverError(w, r, err)
+		}
+		return
+	}
+
+	err = s.sessionManager.RenewToken(r.Context())
+	if err != nil {
+		s.serverError(w, r, err)
+		return
+	}
+
+	s.sessionManager.Put(r.Context(), "authenticatedUserID", id)
+	http.Redirect(w, r, "/feed/create", http.StatusSeeOther)
 }
 
 func (s *Server) handleUserLogoutPost(w http.ResponseWriter, r *http.Request) {

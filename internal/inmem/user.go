@@ -1,6 +1,7 @@
 package inmem
 
 import (
+	"errors"
 	"time"
 
 	"github.com/grodier/rss-go/internal/models"
@@ -41,7 +42,22 @@ func (s *UserService) CreateUser(user *models.UserInput) error {
 }
 
 func (s *UserService) Authenticate(email, password string) (int, error) {
-	return 0, nil
+	for _, user := range s.users {
+		if user.Email == email {
+			err := bcrypt.CompareHashAndPassword(user.HashedPassword, []byte(password))
+			if err != nil {
+				if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+					return 0, models.ErrInvalidCredentials
+				} else {
+					return 0, err
+				}
+			}
+
+			return user.ID, nil
+		}
+	}
+
+	return 0, models.ErrInvalidCredentials
 }
 
 func (s *UserService) Exists(id int) (bool, error) {
