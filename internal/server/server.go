@@ -299,5 +299,15 @@ func (s *Server) handleUserLoginPost(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleUserLogoutPost(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "handleUserLogoutPost not implemented yet")
+	err := s.sessionManager.RenewToken(r.Context())
+	if err != nil {
+		s.serverError(w, r, err)
+		return
+	}
+
+	s.sessionManager.Remove(r.Context(), "authenticatedUserID")
+
+	s.sessionManager.Put(r.Context(), "flash", "You've been logged out successfully!")
+
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
