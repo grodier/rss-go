@@ -21,6 +21,7 @@
       <div>
         {{if .IsAuthenticated}}
         <form action="/user/logout" method="POST">
+          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}" />
           <button type="submit">Logout</button>
         </form>
         {{else}}
@@ -31,6 +32,7 @@
     </nav>
 
     <form action="/user/login" method="POST" novalidate>
+      <input type="hidden" name="csrf_token" value="{{.CSRFToken}}" />
       {{range .NonFieldErrors}}
       <div class="error">{{.}}</div>
       {{end}}
