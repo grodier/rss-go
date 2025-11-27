@@ -21,6 +21,7 @@
       <div>
         {{if .IsAuthenticated}}
         <form action="/user/logout" method="POST">
+          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}" />
           <button type="submit">Logout</button>
         </form>
         {{else}}
@@ -30,6 +31,7 @@
       </div>
     </nav>
     <form action="/feed/create" method="POST">
+      <input type="hidden" name="csrf_token" value="{{.CSRFToken}}" />
       <div>
         <label>Title:</label>
         <input type="text" name="title" value="{{.Feed.Title}}" />

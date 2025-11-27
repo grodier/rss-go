@@ -17,6 +17,7 @@ import (
 	"github.com/grodier/rss-go/internal/models"
 	"github.com/grodier/rss-go/internal/tmpl"
 	"github.com/grodier/rss-go/internal/validator"
+	"github.com/justinas/nosurf"
 )
 
 type Server struct {
@@ -105,9 +106,11 @@ func (s *Server) handleRootView(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		Feeds           []*models.Feed
 		IsAuthenticated bool
+		CSRFToken       string
 	}{
 		Feeds:           feeds,
 		IsAuthenticated: s.isAuthenticated(r),
+		CSRFToken:       nosurf.Token(r),
 	}
 
 	s.render(w, r, http.StatusOK, "root.tmpl.html", data)
@@ -117,6 +120,7 @@ type feedViewData struct {
 	Feed            models.Feed
 	Flash           string
 	IsAuthenticated bool
+	CSRFToken       string
 }
 
 func (s *Server) handleFeedView(w http.ResponseWriter, r *http.Request) {
@@ -143,6 +147,7 @@ func (s *Server) handleFeedView(w http.ResponseWriter, r *http.Request) {
 		Feed:            *feed,
 		Flash:           s.sessionManager.PopString(r.Context(), "flash"),
 		IsAuthenticated: s.isAuthenticated(r),
+		CSRFToken:       nosurf.Token(r),
 	}
 
 	s.render(w, r, http.StatusOK, "feed.tmpl.html", data)
@@ -152,11 +157,13 @@ type feedCreateData struct {
 	Feed            models.Feed
 	FieldErrors     map[string]string
 	IsAuthenticated bool
+	CSRFToken       string
 }
 
 func (s *Server) handleFeedCreate(w http.ResponseWriter, r *http.Request) {
 	s.render(w, r, http.StatusOK, "feed_create.tmpl.html", feedCreateData{
 		IsAuthenticated: s.isAuthenticated(r),
+		CSRFToken:       nosurf.Token(r),
 	})
 }
 
@@ -181,6 +188,7 @@ func (s *Server) handleFeedCreatePost(w http.ResponseWriter, r *http.Request) {
 			Feed:            newFeed,
 			FieldErrors:     v.FieldErrors,
 			IsAuthenticated: s.isAuthenticated(r),
+			CSRFToken:       nosurf.Token(r),
 		}
 
 		s.render(w, r, http.StatusUnprocessableEntity, "feed_create.tmpl.html", data)
@@ -201,11 +209,13 @@ type userSignUpData struct {
 	User            models.UserInput
 	FieldErrors     map[string]string
 	IsAuthenticated bool
+	CSRFToken       string
 }
 
 func (s *Server) handleUserSignUp(w http.ResponseWriter, r *http.Request) {
 	s.render(w, r, http.StatusOK, "signup.tmpl.html", userSignUpData{
 		IsAuthenticated: s.isAuthenticated(r),
+		CSRFToken:       nosurf.Token(r),
 	})
 }
 
@@ -232,6 +242,7 @@ func (s *Server) handleUserSignUpPost(w http.ResponseWriter, r *http.Request) {
 			User:            newUser,
 			FieldErrors:     v.FieldErrors,
 			IsAuthenticated: s.isAuthenticated(r),
+			CSRFToken:       nosurf.Token(r),
 		}
 
 		s.render(w, r, http.StatusUnprocessableEntity, "signup.tmpl.html", data)
@@ -247,6 +258,7 @@ func (s *Server) handleUserSignUpPost(w http.ResponseWriter, r *http.Request) {
 				User:            newUser,
 				FieldErrors:     v.FieldErrors,
 				IsAuthenticated: s.isAuthenticated(r),
+				CSRFToken:       nosurf.Token(r),
 			}
 
 			s.render(w, r, http.StatusUnprocessableEntity, "signup.tmpl.html", data)
@@ -265,11 +277,13 @@ type userLoginData struct {
 	FieldErrors     map[string]string
 	NonFieldErrors  []string
 	IsAuthenticated bool
+	CSRFToken       string
 }
 
 func (s *Server) handleUserLogin(w http.ResponseWriter, r *http.Request) {
 	s.render(w, r, http.StatusOK, "login.tmpl.html", userLoginData{
 		IsAuthenticated: s.isAuthenticated(r),
+		CSRFToken:       nosurf.Token(r),
 	})
 }
 
@@ -297,6 +311,7 @@ func (s *Server) handleUserLoginPost(w http.ResponseWriter, r *http.Request) {
 				FieldErrors:     v.FieldErrors,
 				NonFieldErrors:  v.NonFieldErrors,
 				IsAuthenticated: s.isAuthenticated(r),
+				CSRFToken:       nosurf.Token(r),
 			}
 			s.render(w, r, http.StatusUnprocessableEntity, "login.tmpl.html", data)
 		} else {
