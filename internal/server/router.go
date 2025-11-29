@@ -14,7 +14,7 @@ func (s *Server) router() http.Handler {
 	router.Handler(http.MethodGet, "/static/*file", http.FileServerFS(ui.NoDirFiles))
 	router.HandlerFunc(http.MethodGet, "/api/v1/healthcheck", s.handleHealthcheck)
 
-	dynamic := alice.New(s.sessionManager.LoadAndSave, s.preventCSRF)
+	dynamic := alice.New(s.sessionManager.LoadAndSave, s.preventCSRF, s.authenticate)
 
 	// Unprotected routes
 	router.Handler(http.MethodGet, "/", dynamic.ThenFunc(s.handleRootView))

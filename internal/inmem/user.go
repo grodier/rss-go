@@ -61,5 +61,10 @@ func (s *UserService) Authenticate(email, password string) (int, error) {
 }
 
 func (s *UserService) Exists(id int) (bool, error) {
+	for _, user := range s.users {
+		if user.ID == id {
+			return true, nil
+		}
+	}
 	return false, nil
 }
