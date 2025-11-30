@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"html/template"
 	"log/slog"
 	"net/http"
 	"os"
@@ -27,7 +26,7 @@ type Server struct {
 	FeedService models.FeedService
 	UserService models.UserService
 
-	template       *template.Template
+	template       *tmpl.Template
 	server         *http.Server
 	decoder        *form.Decoder
 	logger         *slog.Logger
