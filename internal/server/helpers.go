@@ -27,7 +27,7 @@ func (s *Server) clientError(w http.ResponseWriter, status int) {
 func (s *Server) render(w http.ResponseWriter, r *http.Request, status int, page string, data any) {
 	buf := new(bytes.Buffer)
 
-	err := s.template.ExecuteTemplate(buf, page, data)
+	err := s.template.Render(buf, page, data)
 	if err != nil {
 		s.serverError(w, r, err)
 		return

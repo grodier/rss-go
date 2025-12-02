@@ -1,54 +1,18 @@
-<!doctype html>
-<html lang="en">
-
-<head>
-  <meta charset="utf-8" />
-  <title>Home - RSS App</title>
-</head>
-
-<body>
-  <header>
-    <h1><a href="/">RSS App</a></h1>
-  </header>
-  <main>
-    <nav>
-      <div>
-        <a href="/">Home</a>
-        {{if .IsAuthenticated}}
-        <a href="/feed/create">Create Feed</a>
-        {{end}}
-      </div>
-      <div>
-        {{if .IsAuthenticated}}
-        <form action="/user/logout" method="POST">
-          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}" />
-          <button type="submit">Logout</button>
-        </form>
-        {{else}}
-        <a href="/user/signup">Signup</a>
-        <a href="/user/login">Login</a>
-        {{end}}
-      </div>
-    </nav>
-    {{if eq (len .Feeds) 0}}
-    <p>
-      No feeds exist yet. <a href="/feed/create">Create your first feed!</a>
-    </p>
-    {{else}}
-    <h2>Latest Feeds</h2>
-    <ul>
-      {{range .Feeds}}
-      <li>
-        <a href="/feed/view/{{.ID}}">{{.Title}}</a>
-        {{if .Description}}
-        <p>{{.Description}}</p>
-        {{end}}
-      </li>
-      {{end}}
-    </ul>
-    {{end}}
-  </main>
-  <footer>Powered by <a href="https://golang.org/">Go</a></footer>
-</body>
-
-</html>
+{{define "title"}}Home{{end}} {{define "main"}}
+<h2>Latest Feeds</h2>
+{{if .Feeds}}
+<table>
+  <tr>
+    <th>Title</th>
+    <th>ID</th>
+  </tr>
+  {{range .Feeds}}
+  <tr>
+    <td><a href="/feed/view/{{.ID}}">{{.Title}}</a></td>
+    <td>#{{.ID}}</td>
+  </tr>
+  {{end}}
+</table>
+{{else}}
+<p>There's nothing to see here yet!</p>
+{{end}} {{end}}

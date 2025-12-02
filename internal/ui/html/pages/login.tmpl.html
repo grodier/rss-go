@@ -1,61 +1,27 @@
-<!doctype html>
-<html lang="en">
-
-<head>
-  <meta charset="utf-8" />
-  <title>Login</title>
-</head>
-
-<body>
-  <header>
-    <h1>Signup</h1>
-  </header>
-  <main>
-    <nav>
-      <div>
-        <a href="/">Home</a>
-        {{if .IsAuthenticated}}
-        <a href="/feed/create">Create Feed</a>
-        {{end}}
-      </div>
-      <div>
-        {{if .IsAuthenticated}}
-        <form action="/user/logout" method="POST">
-          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}" />
-          <button type="submit">Logout</button>
-        </form>
-        {{else}}
-        <a href="/user/signup">Signup</a>
-        <a href="/user/login">Login</a>
-        {{end}}
-      </div>
-    </nav>
-
-    <form action="/user/login" method="POST" novalidate>
-      <input type="hidden" name="csrf_token" value="{{.CSRFToken}}" />
-      {{range .NonFieldErrors}}
-      <div class="error">{{.}}</div>
-      {{end}}
-      <div>
-        <label>Email:</label>
-        {{with .FieldErrors.email}}
-        <label class="error">{{.}}</label>
-        {{end}}
-        <input type="email" name="email" value="{{.User.Email}}" />
-      </div>
-      <div>
-        <label>Password:</label>
-        {{with .FieldErrors.password}}
-        <label class="error">{{.}}</label>
-        {{end}}
-        <input type="password" name="password" />
-      </div>
-      <div>
-        <input type="submit" value="Login" />
-      </div>
-    </form>
-  </main>
-  <footer>Powered by <a href="https://golang.org/">Go</a></footer>
-</body>
-
-</html>
+{{define "title"}}Login{{end}} {{define "main"}}
+<form action="/user/login" method="POST" novalidate>
+  <input type="hidden" name="csrf_token" value="{{.CSRFToken}}" />
+  <!-- Notice that here we are looping over the NonFieldErrors and displaying
+    them, if any exist -->
+  {{range .NonFieldErrors}}
+  <div class="error">{{.}}</div>
+  {{end}}
+  <div>
+    <label>Email:</label>
+    {{with .FieldErrors.email}}
+    <label class="error">{{.}}</label>
+    {{end}}
+    <input type="email" name="email" value="{{.User.Email}}" />
+  </div>
+  <div>
+    <label>Password:</label>
+    {{with .FieldErrors.password}}
+    <label class="error">{{.}}</label>
+    {{end}}
+    <input type="password" name="password" />
+  </div>
+  <div>
+    <input type="submit" value="Login" />
+  </div>
+</form>
+{{end}}
