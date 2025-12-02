@@ -106,6 +106,7 @@ func (s *Server) handleRootView(w http.ResponseWriter, r *http.Request) {
 		Feeds           []*models.Feed
 		IsAuthenticated bool
 		CSRFToken       string
+		Flash           string
 	}{
 		Feeds:           feeds,
 		IsAuthenticated: s.isAuthenticated(r),
@@ -157,6 +158,7 @@ type feedCreateData struct {
 	FieldErrors     map[string]string
 	IsAuthenticated bool
 	CSRFToken       string
+	Flash           string
 }
 
 func (s *Server) handleFeedCreate(w http.ResponseWriter, r *http.Request) {
@@ -209,6 +211,7 @@ type userSignUpData struct {
 	FieldErrors     map[string]string
 	IsAuthenticated bool
 	CSRFToken       string
+	Flash           string
 }
 
 func (s *Server) handleUserSignUp(w http.ResponseWriter, r *http.Request) {
@@ -277,6 +280,7 @@ type userLoginData struct {
 	NonFieldErrors  []string
 	IsAuthenticated bool
 	CSRFToken       string
+	Flash           string
 }
 
 func (s *Server) handleUserLogin(w http.ResponseWriter, r *http.Request) {

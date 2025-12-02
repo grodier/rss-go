@@ -1,44 +1,9 @@
-<!doctype html>
-<html lang="en">
-
-<head>
-  <meta charset="utf-8" />
-  <title>Home - RSS App</title>
-  <script src="/static/js/log.js" type="text/javascript" defer></script>
-</head>
-
-<body>
-  <header>
-    <h1><a href="/">View Feed</a></h1>
-  </header>
-  <main>
-    <nav>
-      <div>
-        <a href="/">Home</a>
-        {{if .IsAuthenticated}}
-        <a href="/feed/create">Create Feed</a>
-        {{end}}
-      </div>
-      <div>
-        {{if .IsAuthenticated}}
-        <form action="/user/logout" method="POST">
-          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}" />
-          <button type="submit">Logout</button>
-        </form>
-        {{else}}
-        <a href="/user/signup">Signup</a>
-        <a href="/user/login">Login</a>
-        {{end}}
-      </div>
-    </nav>
-    {{with .Flash}}
-    <div class="flash">{{.}}</div>
-    {{end}}
-    <h2>{{.Feed.Title}}</h2>
-    <p><strong>Feed ID:</strong> {{.Feed.ID}}</p>
-    <p><strong>Description:</strong> {{.Feed.Description}}</p>
-  </main>
-  <footer>Powered by <a href="https://golang.org/">Go</a></footer>
-</body>
-
-</html>
+{{define "title"}} Feed #{{.Feed.ID}} {{end}} {{define "main"}} {{with .Feed}}
+<div class="snippet">
+  <div class="metadata">
+    <h2>{{.Title}}</h2>
+    <p><strong>Feed ID:</strong> {{.ID}}</p>
+    <p><strong>Description:</strong> {{.Description}}</p>
+  </div>
+</div>
+{{end}} {{end}}
