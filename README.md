@@ -2,6 +2,7 @@ Go project to play around with RSS and demo building a real application (maybe w
 
 ## TODO items to explore in future:
 
+- Common data in view structs
 - Explore refactoring handlers to move validation to model creation
 - Setting up http2 with whatever AWS infrastructure I deploy to
 - More complete logging solution controlled via a config, where do I want to store and explore logs, o11y solutions, etc
