@@ -294,12 +294,17 @@ type userLoginData struct {
 	IsAuthenticated bool
 	CSRFToken       string
 	Flash           string
+	Redirect        string
 }
 
 func (s *Server) handleUserLogin(w http.ResponseWriter, r *http.Request) {
+	redirect := r.URL.Query().Get("redirect")
+
 	s.render(w, r, http.StatusOK, "login.tmpl.html", userLoginData{
 		IsAuthenticated: s.isAuthenticated(r),
 		CSRFToken:       nosurf.Token(r),
+		Flash:           s.sessionManager.PopString(r.Context(), "flash"),
+		Redirect:        redirect,
 	})
 }
 
@@ -311,6 +316,8 @@ func (s *Server) handleUserLoginPost(w http.ResponseWriter, r *http.Request) {
 		s.clientError(w, http.StatusBadRequest)
 		return
 	}
+
+	redirect := r.PostForm.Get("redirect")
 
 	var v validator.Validator
 
@@ -328,6 +335,7 @@ func (s *Server) handleUserLoginPost(w http.ResponseWriter, r *http.Request) {
 				NonFieldErrors:  v.NonFieldErrors,
 				IsAuthenticated: s.isAuthenticated(r),
 				CSRFToken:       nosurf.Token(r),
+				Redirect:        redirect,
 			}
 			s.render(w, r, http.StatusUnprocessableEntity, "login.tmpl.html", data)
 		} else {
@@ -343,7 +351,13 @@ func (s *Server) handleUserLoginPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.sessionManager.Put(r.Context(), "authenticatedUserID", id)
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+
+	// Redirect to the original destination or home if none specified
+	if redirect != "" && s.isSafeRedirect(redirect) {
+		http.Redirect(w, r, redirect, http.StatusSeeOther)
+	} else {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	}
 }
 
 func (s *Server) handleUserLogoutPost(w http.ResponseWriter, r *http.Request) {
