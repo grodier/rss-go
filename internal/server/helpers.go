@@ -74,3 +74,9 @@ func (s *Server) isAuthenticated(r *http.Request) bool {
 
 	return isAuthenticated
 }
+
+func (s *Server) isSafeRedirect(path string) bool {
+	// Only allow relative paths that start with "/" but not "//"
+	// This prevents open redirect vulnerabilities
+	return len(path) > 0 && path[0] == '/' && (len(path) == 1 || path[1] != '/')
+}

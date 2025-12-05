@@ -1,6 +1,7 @@
 {{define "title"}}Login{{end}} {{define "main"}}
 <form action="/login" method="POST" novalidate>
   <input type="hidden" name="csrf_token" value="{{.CSRFToken}}" />
+  <input type="hidden" name="redirect" value="{{.Redirect}}" />
   <!-- Notice that here we are looping over the NonFieldErrors and displaying
     them, if any exist -->
   {{range .NonFieldErrors}}
