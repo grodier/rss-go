@@ -2,9 +2,10 @@
 <nav>
   <div>
     <a href="/">Home</a>
+    <a href="/about">About</a>
     <!-- Toggle the link based on authentication status -->
     {{if .IsAuthenticated}}
-    <a href="/feed/create">Create feed</a>
+    <a href="/feeds/new">Create feed</a>
     {{end}}
   </div>
   <div>
@@ -15,8 +16,8 @@
       <button>Logout</button>
     </form>
     {{else}}
-    <a href="/user/signup">Signup</a>
-    <a href="/user/login">Login</a>
+    <a href="/signup">Signup</a>
+    <a href="/login">Login</a>
     {{end}}
   </div>
 </nav>

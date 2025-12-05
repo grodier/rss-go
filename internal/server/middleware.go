@@ -52,7 +52,7 @@ func (s *Server) recoverPanic(next http.Handler) http.Handler {
 func (s *Server) requireAuthentication(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !s.isAuthenticated(r) {
-			http.Redirect(w, r, "/user/login", http.StatusSeeOther)
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
 

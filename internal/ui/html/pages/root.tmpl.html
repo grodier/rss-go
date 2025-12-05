@@ -1,5 +1,7 @@
 {{define "title"}}Home{{end}} {{define "main"}}
-<h2>Latest Feeds</h2>
+{{if .IsAuthenticated}}
+<h2>Your Dashboard</h2>
+<p>Welcome back! Here are the latest articles from your subscribed feeds.</p>
 {{if .Feeds}}
 <table>
   <tr>
@@ -8,11 +10,20 @@
   </tr>
   {{range .Feeds}}
   <tr>
-    <td><a href="/feed/view/{{.ID}}">{{.Title}}</a></td>
+    <td><a href="/feeds/{{.ID}}">{{.Title}}</a></td>
     <td>#{{.ID}}</td>
   </tr>
   {{end}}
 </table>
 {{else}}
 <p>There's nothing to see here yet!</p>
+{{end}}
+{{else}}
+<h2>Welcome to RSS</h2>
+<p>RSS is a simple RSS feed reader that helps you stay up to date with your favorite websites and blogs.</p>
+<h3>Get Started</h3>
+<p>Sign up for an account to start subscribing to RSS feeds and keep track of the latest articles in one place.</p>
+<div>
+  <a href="/signup">Sign Up</a> or <a href="/login">Log In</a>
+</div>
 {{end}} {{end}}
