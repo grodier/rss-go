@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/form/v4"
-	"github.com/julienschmidt/httprouter"
 )
 
 func (s *Server) serverError(w http.ResponseWriter, r *http.Request, err error) {
@@ -39,9 +39,9 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, status int, page
 }
 
 func (s *Server) readIDParam(r *http.Request) (int64, error) {
-	params := httprouter.ParamsFromContext(r.Context())
+	idStr := chi.URLParam(r, "id")
 
-	id, err := strconv.ParseInt(params.ByName("id"), 10, 64)
+	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil || id < 1 {
 		return 0, errors.New("invalid id parameter")
 	}

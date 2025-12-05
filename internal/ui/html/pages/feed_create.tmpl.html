@@ -1,5 +1,5 @@
 {{define "title"}}Create a New Feed{{end}} {{define "main"}}
-<form action="/feed/create" method="POST">
+<form action="/feeds/new" method="POST">
   <input type="hidden" name="csrf_token" value="{{.CSRFToken}}" />
   <div>
     <label>Title:</label>

@@ -116,6 +116,19 @@ func (s *Server) handleRootView(w http.ResponseWriter, r *http.Request) {
 	s.render(w, r, http.StatusOK, "root.tmpl.html", data)
 }
 
+func (s *Server) handleAboutView(w http.ResponseWriter, r *http.Request) {
+	data := struct {
+		IsAuthenticated bool
+		CSRFToken       string
+		Flash           string
+	}{
+		IsAuthenticated: s.isAuthenticated(r),
+		CSRFToken:       nosurf.Token(r),
+	}
+
+	s.render(w, r, http.StatusOK, "about.tmpl.html", data)
+}
+
 type feedViewData struct {
 	Feed            models.Feed
 	Flash           string
@@ -203,7 +216,7 @@ func (s *Server) handleFeedCreatePost(w http.ResponseWriter, r *http.Request) {
 
 	s.sessionManager.Put(r.Context(), "flash", "Feed successfully created")
 
-	http.Redirect(w, r, fmt.Sprintf("/feed/view/%d", newFeed.ID), http.StatusSeeOther)
+	http.Redirect(w, r, fmt.Sprintf("/feeds/%d", newFeed.ID), http.StatusSeeOther)
 }
 
 type userSignUpData struct {
@@ -271,7 +284,7 @@ func (s *Server) handleUserSignUpPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.sessionManager.Put(r.Context(), "flash", "Your signup was successful. Please log in.")
-	http.Redirect(w, r, "/user/login", http.StatusSeeOther)
+	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 
 type userLoginData struct {
@@ -330,7 +343,7 @@ func (s *Server) handleUserLoginPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.sessionManager.Put(r.Context(), "authenticatedUserID", id)
-	http.Redirect(w, r, "/feed/create", http.StatusSeeOther)
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func (s *Server) handleUserLogoutPost(w http.ResponseWriter, r *http.Request) {
