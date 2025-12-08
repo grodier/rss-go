@@ -1,6 +1,7 @@
 package server
 
 import (
+	"io/fs"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -15,8 +16,13 @@ func (s *Server) router() http.Handler {
 	router.Use(s.logRequest)
 	router.Use(commonHeaders)
 
-	// Static files
-	router.Handle("/static/*", http.StripPrefix("/static", http.FileServerFS(ui.NoDirFiles)))
+	// Static files - serve from the "static" subdirectory of the embedded FS
+	staticFS, err := fs.Sub(ui.NoDirFiles, "static")
+	if err != nil {
+		panic(err)
+	}
+	fileServer := http.FileServerFS(staticFS)
+	router.Handle("/static/*", http.StripPrefix("/static", fileServer))
 
 	// Health check
 	router.Get("/api/v1/healthcheck", s.handleHealthcheck)
