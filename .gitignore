@@ -1,0 +1,7 @@
+# Build artifacts
+tmp/
+
+# IDE
+.DS_Store
+.vscode/
+.idea/

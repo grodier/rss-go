@@ -1,0 +1,187 @@
+@layer reset {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    -moz-text-size-adjust: none;
+    -webkit-text-size-adjust: none;
+    text-size-adjust: none;
+  }
+
+  body,
+  h1,
+  h2,
+  h3,
+  h4,
+  p,
+  figure,
+  blockquote,
+  dl,
+  dd {
+    margin: 0;
+  }
+
+  [role="list"] {
+    list-style: none;
+  }
+
+  body {
+    min-block-size: 100vh;
+    line-height: 1.5;
+  }
+
+  h1,
+  h2,
+  h3,
+  button,
+  input,
+  label {
+    line-height: 1.1;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    text-wrap: balance;
+  }
+
+  p,
+  li {
+    text-wrap: pretty;
+  }
+
+  img,
+  picture {
+    max-inline-size: 100%;
+    display: block;
+  }
+
+  input,
+  button,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  textarea:not([rows]) {
+    min-height: 10em;
+  }
+}
+
+@layer base {
+  :root {
+    --clr-white: #000;
+    --clr-black: #fff;
+    --clr-brand-500: #1a1f3a;
+
+    --ff-heading: "Outfit", sans-serif;
+    --ff-body: "Fira Sans", sans-serif;
+
+    /* Fluid Type */
+    --font-size-min: 14;
+    --font-size-max: 18;
+    --font-ratio-min: 1.2;
+    --font-ratio-max: 1.33;
+    --font-width-min: 320;
+    --font-width-max: 1500;
+  }
+
+  body,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  p,
+  li,
+  .fluid,
+  textarea,
+  input,
+  select,
+  button,
+  a,
+  th,
+  td {
+    /* Fluid Typography System
+     *
+     * From https://github.com/stolinski/graffiti/blob/main/src/lib/drop-in.css
+     *
+     * This system creates responsive font sizes that scale smoothly between viewport sizes.
+     * Set --fl (fluid level) on any element to control its size (-1 to 6).
+     *
+     * How it works:
+     * 1. Calculate min/max font sizes using pow() with modular scale ratios
+     * 2. Find the rate of change (slope) between min and max
+     * 3. Use clamp() to create a fluid value that scales with viewport/container width
+     *
+     * Formula breakdown:
+     * - --fluid-min: Minimum font size = base * ratio^level
+     * - --fluid-max: Maximum font size = base * ratio^level
+     * - --fluid-preferred: Slope of linear interpolation
+     * - --fluid-type: clamp(min, min + slope * viewport, max)
+     */
+    --fluid-min: calc(
+      var(--font-size-min) * pow(var(--font-ratio-min), var(--fl, 0))
+    );
+    --fluid-max: calc(
+      var(--font-size-max) * pow(var(--font-ratio-max), var(--fl, 0))
+    );
+    --fluid-preferred: calc(
+      (var(--fluid-max) - var(--fluid-min)) /
+        (var(--font-width-max) - var(--font-width-min))
+    );
+    --fluid-type: clamp(
+      (var(--fluid-min) / 16) * 1rem,
+      ((var(--fluid-min) / 16) * 1rem) -
+        (((var(--fluid-preferred) * var(--font-width-min)) / 16) * 1rem) +
+        (var(--fluid-preferred) * var(--variable-unit, 100vi)),
+      (var(--fluid-max) / 16) * 1rem
+    );
+    font-size: var(--fluid-type);
+  }
+
+  h1 {
+    --fl: 5;
+  }
+  h2 {
+    --fl: 4;
+  }
+  h3 {
+    --fl: 3;
+  }
+  h4 {
+    --fl: 2;
+  }
+  h5 {
+    --fl: 1;
+  }
+  h6 {
+    --fl: 0;
+  }
+
+  p,
+  li,
+  body,
+  input,
+  textarea,
+  button,
+  select {
+    --fl: 0;
+  }
+
+  body {
+    font-family: var(--ff-body);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--ff-heading);
+  }
+}

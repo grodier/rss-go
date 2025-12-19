@@ -1,0 +1,15 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+cmd = "go build -o ./tmp/main ./cmd/web/"
+bin = "./tmp/main -port 8080"
+include_ext = ["go"]  # Only watch .go files
+exclude_dir = ["tmp", "vendor", "node_modules"]
+delay = 1000  # ms
+
+[log]
+time = true
+
+[misc]
+clean_on_exit = true
