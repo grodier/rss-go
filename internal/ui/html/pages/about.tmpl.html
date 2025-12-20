@@ -1,11 +1,47 @@
-{{define "title"}}About{{end}} {{define "main"}}
-<h2>About RSS</h2>
-<p>RSS is a simple RSS feed reader that helps you stay up to date with your favorite websites and blogs.</p>
-<h3>Features</h3>
-<ul>
-  <li>Subscribe to RSS feeds from your favorite sites</li>
-  <li>View all your articles in one place</li>
-  <li>Keep track of the latest updates</li>
-</ul>
-<p>Sign up to get started, or log in if you already have an account.</p>
+{{define "html"}}
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <title>About - RSS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;700&family=Outfit:wght@100..900&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="/static/css/styles.css" />
+</head>
+
+<body>
+  <div class="container">
+    {{with .Flash}}
+    <div class="flash">{{.}}</div>
+    {{end}}
+
+    <main class="main">
+      <header class="page-header">
+        <h1>About RSS</h1>
+        <p class="page-description">A simple RSS feed reader for everyone</p>
+      </header>
+
+      <section class="content-section">
+        <p>RSS is a simple RSS feed reader that helps you stay up to date with your favorite websites and blogs.</p>
+
+        <h2>Features</h2>
+        <ul class="features-list">
+          <li>Subscribe to RSS feeds from your favorite sites</li>
+          <li>View all your articles in one place</li>
+          <li>Keep track of the latest updates</li>
+        </ul>
+
+        <div class="landing-actions">
+          <a href="/signup" class="btn btn-primary">Sign Up</a>
+          <a href="/login" class="btn btn-secondary">Log In</a>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+
+</html>
 {{end}}

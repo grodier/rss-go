@@ -1,22 +1,63 @@
-{{define "title"}}Create a New Feed{{end}} {{define "main"}}
-<form action="/feeds/new" method="POST">
-  <input type="hidden" name="csrf_token" value="{{.CSRFToken}}" />
-  <div>
-    <label>Title:</label>
-    <input type="text" name="title" value="{{.Feed.Title}}" />
-    {{with .FieldErrors.title}}
-    <span style="color: red">{{.}}</span>
+{{define "html"}}
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <title>Create Feed - RSS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;700&family=Outfit:wght@100..900&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="/static/css/styles.css" />
+</head>
+
+<body>
+  <div class="container">
+    {{with .Flash}}
+    <div class="flash">{{.}}</div>
     {{end}}
+
+    <nav class="nav">
+      <ul class="nav-list">
+        <li class="nav-item"><a href="/" class="nav-link">Home</a></li>
+        <li class="nav-item"><a href="/feeds" class="nav-link active">Feeds</a></li>
+        <li class="nav-item"><a href="#" class="nav-link">Settings</a></li>
+      </ul>
+    </nav>
+
+    <main class="main">
+      <header class="page-header">
+        <h1>Create a New Feed</h1>
+        <p class="page-description">Add a new RSS feed to your subscriptions</p>
+      </header>
+
+      <section class="form-section">
+        <form action="/feeds/new" method="POST" class="feed-form">
+          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}" />
+
+          <div class="form-group">
+            <label for="title">Title</label>
+            {{with .FieldErrors.title}}
+            <span class="field-error">{{.}}</span>
+            {{end}}
+            <input type="text" id="title" name="title" value="{{.Feed.Title}}" class="form-input" />
+          </div>
+
+          <div class="form-group">
+            <label for="description">Description</label>
+            {{with .FieldErrors.description}}
+            <span class="field-error">{{.}}</span>
+            {{end}}
+            <textarea id="description" name="description" class="form-input" rows="4">{{.Feed.Description}}</textarea>
+          </div>
+
+          <button type="submit" class="btn btn-primary">Create Feed</button>
+        </form>
+      </section>
+    </main>
   </div>
-  <div>
-    <label>Description:</label>
-    <textarea name="description">{{.Feed.Description}}</textarea>
-    {{with .FieldErrors.description}}
-    <span style="color: red">{{.}}</span>
-    {{end}}
-  </div>
-  <div>
-    <input type="submit" value="Create Feed" />
-  </div>
-</form>
+</body>
+
+</html>
 {{end}}

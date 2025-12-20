@@ -1,29 +1,67 @@
-{{define "title"}}Signup{{end}} {{define "main"}}
-<form action="/signup" method="POST" novalidate>
-  <input type="hidden" name="csrf_token" value="{{.CSRFToken}}" />
-  <div>
-    <label>Name:</label>
-    {{with .FieldErrors.name}}
-    <label class="error">{{.}}</label>
+{{define "html"}}
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <title>Sign Up - RSS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;700&family=Outfit:wght@100..900&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="/static/css/styles.css" />
+</head>
+
+<body>
+  <div class="container">
+    {{with .Flash}}
+    <div class="flash">{{.}}</div>
     {{end}}
-    <input type="text" name="name" value="{{.User.Name}}" />
+
+    <main class="main">
+      <header class="page-header">
+        <h1>Sign Up</h1>
+        <p class="page-description">Create your account</p>
+      </header>
+
+      <section class="form-section">
+        <form action="/signup" method="POST" novalidate class="auth-form">
+          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}" />
+
+          <div class="form-group">
+            <label for="name">Name</label>
+            {{with .FieldErrors.name}}
+            <span class="field-error">{{.}}</span>
+            {{end}}
+            <input type="text" id="name" name="name" value="{{.User.Name}}" class="form-input" />
+          </div>
+
+          <div class="form-group">
+            <label for="email">Email</label>
+            {{with .FieldErrors.email}}
+            <span class="field-error">{{.}}</span>
+            {{end}}
+            <input type="email" id="email" name="email" value="{{.User.Email}}" class="form-input" />
+          </div>
+
+          <div class="form-group">
+            <label for="password">Password</label>
+            {{with .FieldErrors.password}}
+            <span class="field-error">{{.}}</span>
+            {{end}}
+            <input type="password" id="password" name="password" class="form-input" />
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block">Sign Up</button>
+        </form>
+
+        <p class="form-footer">
+          Already have an account? <a href="/login">Log in</a>
+        </p>
+      </section>
+    </main>
   </div>
-  <div>
-    <label>Email:</label>
-    {{with .FieldErrors.email}}
-    <label class="error">{{.}}</label>
-    {{end}}
-    <input type="email" name="email" value="{{.User.Email}}" />
-  </div>
-  <div>
-    <label>Password:</label>
-    {{with .FieldErrors.password}}
-    <label class="error">{{.}}</label>
-    {{end}}
-    <input type="password" name="password" />
-  </div>
-  <div>
-    <input type="submit" value="Signup" />
-  </div>
-</form>
+</body>
+
+</html>
 {{end}}

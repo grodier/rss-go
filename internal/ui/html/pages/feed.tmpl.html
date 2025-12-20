@@ -1,9 +1,59 @@
-{{define "title"}} Feed #{{.Feed.ID}} {{end}} {{define "main"}} {{with .Feed}}
-<div class="snippet">
-  <div class="metadata">
-    <h2>{{.Title}}</h2>
-    <p><strong>Feed ID:</strong> {{.ID}}</p>
-    <p><strong>Description:</strong> {{.Description}}</p>
+{{define "html"}}
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <title>{{.Feed.Title}} - RSS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;700&family=Outfit:wght@100..900&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="/static/css/styles.css" />
+</head>
+
+<body>
+  <div class="container">
+    {{with .Flash}}
+    <div class="flash">{{.}}</div>
+    {{end}}
+
+    <nav class="nav">
+      <ul class="nav-list">
+        <li class="nav-item"><a href="/" class="nav-link">Home</a></li>
+        <li class="nav-item"><a href="/feeds" class="nav-link active">Feeds</a></li>
+        <li class="nav-item"><a href="#" class="nav-link">Settings</a></li>
+      </ul>
+    </nav>
+
+    <main class="main">
+      {{with .Feed}}
+      <header class="page-header">
+        <h1>{{.Title}}</h1>
+        <p class="page-description">Feed #{{.ID}}</p>
+      </header>
+
+      <section class="feed-detail">
+        <div class="detail-card">
+          <h2>Details</h2>
+          <dl class="detail-list">
+            <dt>Feed ID</dt>
+            <dd>{{.ID}}</dd>
+
+            <dt>Description</dt>
+            <dd>{{.Description}}</dd>
+
+            {{if .Link}}
+            <dt>Feed URL</dt>
+            <dd><a href="{{.Link}}" target="_blank" rel="noopener noreferrer">{{.Link}}</a></dd>
+            {{end}}
+          </dl>
+        </div>
+      </section>
+      {{end}}
+    </main>
   </div>
-</div>
-{{end}} {{end}}
+</body>
+
+</html>
+{{end}}
