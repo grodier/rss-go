@@ -76,7 +76,10 @@
   :root {
     --clr-white: #000;
     --clr-black: #fff;
-    --clr-brand-500: #1a1f3a;
+    --clr-gray-100: #fafafa;
+    --clr-gray-300: #e0e0e0;
+    --clr-brand-500: #3a4063;
+    --clr-brand-700: #0b0f26;
 
     --ff-heading: "Outfit", sans-serif;
     --ff-body: "Fira Sans", sans-serif;
@@ -88,6 +91,9 @@
     --font-ratio-max: 1.33;
     --font-width-min: 320;
     --font-width-max: 1500;
+
+    --bg-primary: var(--clr-gray-100);
+    --border-primary: var(--clr-gray-300);
   }
 
   body,
@@ -176,6 +182,7 @@
 
   body {
     font-family: var(--ff-body);
+    background-color: var(--bg-primary);
   }
 
   h1,
@@ -183,5 +190,13 @@
   h3,
   h4 {
     font-family: var(--ff-heading);
+  }
+
+  a {
+    color: var(--clr-brand-500);
+  }
+
+  a:hover {
+    color: var(--clr-brand-700);
   }
 }

@@ -13,7 +13,13 @@ type UserService struct {
 }
 
 func NewUserService() *UserService {
-	return &UserService{}
+	u := &UserService{}
+	u.CreateUser(&models.UserInput{
+		Name:     "Test User",
+		Email:    "a@a.com",
+		Password: "12345678",
+	})
+	return u
 }
 
 func (s *UserService) CreateUser(user *models.UserInput) error {

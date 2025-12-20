@@ -96,24 +96,40 @@ func (s *Server) handleHealthcheck(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleRootView(w http.ResponseWriter, r *http.Request) {
-	feeds, err := s.FeedService.GetLatestFeeds()
-	if err != nil {
-		s.serverError(w, r, err)
-		return
-	}
+	// Render different templates based on authentication status
+	if s.isAuthenticated(r) {
+		// Authenticated users see the dashboard
+		feeds, err := s.FeedService.GetLatestFeeds()
+		if err != nil {
+			s.serverError(w, r, err)
+			return
+		}
 
-	data := struct {
-		Feeds           []*models.Feed
-		IsAuthenticated bool
-		CSRFToken       string
-		Flash           string
-	}{
-		Feeds:           feeds,
-		IsAuthenticated: s.isAuthenticated(r),
-		CSRFToken:       nosurf.Token(r),
-	}
+		data := struct {
+			Feeds           []*models.Feed
+			IsAuthenticated bool
+			CSRFToken       string
+			Flash           string
+		}{
+			Feeds:           feeds,
+			IsAuthenticated: true,
+			CSRFToken:       nosurf.Token(r),
+		}
 
-	s.render(w, r, http.StatusOK, "root.tmpl.html", data)
+		s.render(w, r, http.StatusOK, "dashboard.tmpl.html", data)
+	} else {
+		// Unauthenticated users see the landing page
+		data := struct {
+			IsAuthenticated bool
+			CSRFToken       string
+			Flash           string
+		}{
+			IsAuthenticated: false,
+			CSRFToken:       nosurf.Token(r),
+		}
+
+		s.render(w, r, http.StatusOK, "root.tmpl.html", data)
+	}
 }
 
 func (s *Server) handleAboutView(w http.ResponseWriter, r *http.Request) {

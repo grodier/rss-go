@@ -1,24 +1,4 @@
 {{define "title"}}Home{{end}} {{define "main"}}
-{{if .IsAuthenticated}}
-<h2>Your Dashboard</h2>
-<p>Welcome back! Here are the latest articles from your subscribed feeds.</p>
-{{if .Feeds}}
-<table>
-  <tr>
-    <th>Title</th>
-    <th>ID</th>
-  </tr>
-  {{range .Feeds}}
-  <tr>
-    <td><a href="/feeds/{{.ID}}">{{.Title}}</a></td>
-    <td>#{{.ID}}</td>
-  </tr>
-  {{end}}
-</table>
-{{else}}
-<p>There's nothing to see here yet!</p>
-{{end}}
-{{else}}
 <h2>Welcome to RSS</h2>
 <p>RSS is a simple RSS feed reader that helps you stay up to date with your favorite websites and blogs.</p>
 <h3>Get Started</h3>
@@ -26,4 +6,4 @@
 <div>
   <a href="/signup">Sign Up</a> or <a href="/login">Log In</a>
 </div>
-{{end}} {{end}}
+{{end}}
