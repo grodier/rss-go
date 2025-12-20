@@ -432,6 +432,150 @@
     margin-bottom: 1.5rem;
   }
 
+  /* Form Section */
+  .form-section {
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  /* Auth Forms */
+  .auth-form,
+  .feed-form {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-primary);
+  }
+
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .field-error {
+    color: #dc3545;
+    font-size: 0.875rem;
+    display: block;
+    margin-top: 0.25rem;
+  }
+
+  .error-message {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 1rem;
+    border-radius: 6px;
+    border: 1px solid #f5c6cb;
+    margin-bottom: 1.5rem;
+  }
+
+  .form-footer {
+    text-align: center;
+    margin-top: 1.5rem;
+    color: #666;
+  }
+
+  .form-footer a {
+    color: var(--clr-brand-500);
+    font-weight: 500;
+  }
+
+  /* Button Variants */
+  .btn-secondary {
+    background-color: white;
+    color: var(--clr-brand-500);
+    border: 2px solid var(--clr-brand-500);
+  }
+
+  .btn-secondary:hover {
+    background-color: var(--clr-brand-500);
+    color: white;
+  }
+
+  .btn-block {
+    width: 100%;
+    display: block;
+  }
+
+  /* Landing Page */
+  .landing-header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+
+  .landing-content {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .landing-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+  }
+
+  /* Content Section */
+  .content-section {
+    max-width: 800px;
+    margin: 0 auto;
+    line-height: 1.8;
+  }
+
+  .content-section h2 {
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  .content-section p {
+    margin-bottom: 1rem;
+  }
+
+  .features-list {
+    list-style: disc;
+    margin-left: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .features-list li {
+    margin-bottom: 0.5rem;
+  }
+
+  /* Feed Detail */
+  .feed-detail {
+    max-width: 800px;
+  }
+
+  .detail-card {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-primary);
+  }
+
+  .detail-card h2 {
+    margin-bottom: 1.5rem;
+  }
+
+  .detail-list {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    gap: 1rem 2rem;
+    align-items: start;
+  }
+
+  .detail-list dt {
+    font-weight: 500;
+    color: #666;
+  }
+
+  .detail-list dd {
+    margin: 0;
+    color: #333;
+  }
+
+  .detail-list a {
+    word-break: break-all;
+  }
+
   /* Responsive */
   @media (max-width: 768px) {
     .subscribe-form {
