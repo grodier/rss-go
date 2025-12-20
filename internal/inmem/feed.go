@@ -11,7 +11,24 @@ type FeedService struct {
 }
 
 func NewFeedService() *FeedService {
-	return &FeedService{}
+	fs := &FeedService{}
+
+	// Seed with dummy feeds for development
+	fs.CreateFeed(&models.Feed{
+		Title:       "CSS-Tricks",
+		Description: "Tips, tricks, and techniques on using Cascading Style Sheets.",
+		Link:        "https://css-tricks.com/feed/",
+		ImageURL:    "https://i0.wp.com/css-tricks.com/wp-content/uploads/2021/07/akqRGyta_400x400.png",
+	})
+
+	fs.CreateFeed(&models.Feed{
+		Title:       "Go Blog",
+		Description: "The Go Programming Language Blog",
+		Link:        "https://go.dev/blog/feed.atom",
+		ImageURL:    "",
+	})
+
+	return fs
 }
 
 func (s *FeedService) CreateFeed(feed *models.Feed) error {

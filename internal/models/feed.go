@@ -6,6 +6,8 @@ type Feed struct {
 	ID          int       `form:"-"`
 	Title       string    `form:"title"`
 	Description string    `form:"description"`
+	Link        string    `form:"link"`
+	ImageURL    string    `form:"image_url"`
 	CreatedAt   time.Time `form:"-"`
 }
 
