@@ -13,28 +13,35 @@
 </head>
 
 <body>
-  <main>
+  <div class="container">
     {{with .Flash}}
     <div class="flash">{{.}}</div>
     {{end}}
-    <div>
-      <nav>
-        <ul>
-          <li><a href="#">Home</a></li>
-          <li><a href="#">Feeds</a></li>
-          <li><a href="#">Settings</a></li>
-        </ul>
-      </nav>
-    </div>
-    <section>
-      <article>
-        <h2>Css Tricks</h2>
-      </article>
-      <article>
-        <h2>Go Lang</h2>
-      </article>
-    </section>
-  </main>
+
+    <nav class="nav">
+      <ul class="nav-list">
+        <li class="nav-item"><a href="/" class="nav-link active">Home</a></li>
+        <li class="nav-item"><a href="/feeds" class="nav-link">Feeds</a></li>
+        <li class="nav-item"><a href="#" class="nav-link">Settings</a></li>
+      </ul>
+    </nav>
+
+    <main class="main">
+      <header class="page-header">
+        <h1>Dashboard</h1>
+        <p class="page-description">Your latest articles</p>
+      </header>
+
+      <section>
+        <article>
+          <h2>Css Tricks</h2>
+        </article>
+        <article>
+          <h2>Go Lang</h2>
+        </article>
+      </section>
+    </main>
+  </div>
 </body>
 
 </html>

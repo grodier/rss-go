@@ -145,6 +145,28 @@ func (s *Server) handleAboutView(w http.ResponseWriter, r *http.Request) {
 	s.render(w, r, http.StatusOK, "about.tmpl.html", data)
 }
 
+func (s *Server) handleFeedsList(w http.ResponseWriter, r *http.Request) {
+	feeds, err := s.FeedService.GetLatestFeeds()
+	if err != nil {
+		s.serverError(w, r, err)
+		return
+	}
+
+	data := struct {
+		Feeds           []*models.Feed
+		IsAuthenticated bool
+		CSRFToken       string
+		Flash           string
+	}{
+		Feeds:           feeds,
+		IsAuthenticated: s.isAuthenticated(r),
+		CSRFToken:       nosurf.Token(r),
+		Flash:           s.sessionManager.PopString(r.Context(), "flash"),
+	}
+
+	s.render(w, r, http.StatusOK, "feeds_list.tmpl.html", data)
+}
+
 type feedViewData struct {
 	Feed            models.Feed
 	Flash           string
