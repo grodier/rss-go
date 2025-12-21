@@ -49,6 +49,10 @@ func (s *Server) router() http.Handler {
 		r.Use(s.requireAuthentication)
 
 		r.Get("/feeds", s.handleFeedsList)
+		r.Get("/feeds/search", s.handleFeedSearch)
+		r.Post("/feeds/search", s.handleFeedSearchPost)
+		r.Get("/feeds/suggest", s.handleFeedSuggest)
+		r.Get("/feeds/discover/{id}/events", s.handleFeedDiscoveryEvents)
 		r.Get("/feeds/{id}", s.handleFeedView)
 		r.Get("/feeds/new", s.handleFeedCreate)
 		r.Post("/feeds/new", s.handleFeedCreatePost)

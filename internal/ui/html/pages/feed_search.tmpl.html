@@ -1,0 +1,313 @@
+{{define "html"}}
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <title>Search Feeds</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;700&family=Outfit:wght@100..900&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="/static/css/styles.css" />
+  <style>
+    .search-form {
+      margin-bottom: 2rem;
+    }
+
+    .search-input-wrapper {
+      position: relative;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+      border: 2px solid var(--border-color, #e0e0e0);
+      border-radius: 8px;
+      transition: border-color 0.2s;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--primary-color, #0066cc);
+    }
+
+    .search-button {
+      margin-top: 1rem;
+    }
+
+    .autocomplete-list {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid var(--border-color, #e0e0e0);
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      max-height: 300px;
+      overflow-y: auto;
+      z-index: 1000;
+    }
+
+    .autocomplete-list.active {
+      display: block;
+    }
+
+    .autocomplete-item {
+      padding: 0.75rem 1rem;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border-color, #f0f0f0);
+    }
+
+    .autocomplete-item:hover,
+    .autocomplete-item.selected {
+      background-color: var(--hover-bg, #f5f5f5);
+    }
+
+    .autocomplete-item:last-child {
+      border-bottom: none;
+    }
+
+    .discovery-status {
+      margin-bottom: 1.5rem;
+      padding: 1rem;
+      background-color: #f0f8ff;
+      border-left: 4px solid #0066cc;
+      border-radius: 4px;
+    }
+
+    .discovery-status.error {
+      background-color: #fff0f0;
+      border-left-color: #cc0000;
+    }
+
+    .discovery-status.success {
+      background-color: #f0fff0;
+      border-left-color: #00cc00;
+    }
+
+    .discovery-status h3 {
+      margin: 0 0 0.5rem 0;
+      font-size: 1rem;
+    }
+
+    .discovery-status p {
+      margin: 0;
+      font-size: 0.875rem;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 1rem;
+      height: 1rem;
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #0066cc;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 0.5rem;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .results-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .result-item {
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      background: white;
+      border: 1px solid var(--border-color, #e0e0e0);
+      border-radius: 8px;
+      transition: box-shadow 0.2s;
+    }
+
+    .result-item:hover {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .result-title {
+      margin: 0 0 0.5rem 0;
+      font-size: 1.25rem;
+      color: var(--text-color, #333);
+    }
+
+    .result-url {
+      margin: 0 0 0.5rem 0;
+      font-size: 0.875rem;
+      color: var(--secondary-text, #666);
+      word-break: break-all;
+    }
+
+    .result-source {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .result-source.known {
+      background-color: #e6f7ff;
+      color: #0066cc;
+    }
+
+    .result-source.discovered {
+      background-color: #f0fff0;
+      color: #00aa00;
+    }
+
+    .result-reason {
+      margin: 0.5rem 0 0 0;
+      font-size: 0.875rem;
+      color: var(--secondary-text, #666);
+      font-style: italic;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--secondary-text, #666);
+    }
+
+    .no-js-message {
+      margin-top: 1rem;
+      padding: 0.75rem;
+      background-color: #fff9e6;
+      border-left: 4px solid #ffcc00;
+      border-radius: 4px;
+      font-size: 0.875rem;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    {{with .Flash}}
+    <div class="flash">{{.}}</div>
+    {{end}}
+
+    <nav class="nav">
+      <ul class="nav-list">
+        <li class="nav-item"><a href="/" class="nav-link">Home</a></li>
+        <li class="nav-item"><a href="/feeds" class="nav-link">Feeds</a></li>
+        <li class="nav-item"><a href="/feeds/search" class="nav-link active">Search</a></li>
+        <li class="nav-item"><a href="#" class="nav-link">Settings</a></li>
+      </ul>
+    </nav>
+
+    <main class="main">
+      <header class="page-header">
+        <h1>Search & Discover Feeds</h1>
+        <p class="page-description">Find RSS feeds by URL, domain, or keyword</p>
+      </header>
+
+      <section class="search-section">
+        <form action="/feeds/search" method="POST" class="search-form" id="search-form">
+          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}" />
+          <div class="form-group">
+            <label for="search-query">Enter a URL, domain, or search term</label>
+            <div class="search-input-wrapper">
+              <input
+                type="text"
+                id="search-query"
+                name="q"
+                value="{{.Query}}"
+                placeholder="e.g., techcrunch.com or https://example.com/feed.xml"
+                class="search-input"
+                autocomplete="off"
+              />
+              <div id="autocomplete-list" class="autocomplete-list"></div>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary search-button">Search</button>
+        </form>
+      </section>
+
+      <section class="discovery-status" id="discovery-status"
+               {{if .Discovery}}
+               data-discovery-id="{{.Discovery.ID}}"
+               data-status="{{.Discovery.Status}}"
+               {{else}}
+               style="display: none;"
+               {{end}}>
+        {{if .Discovery}}
+          {{if eq .Discovery.Status "pending"}}
+            <h3><span class="spinner"></span>Discovering feeds...</h3>
+            <p>{{.Discovery.Message}}</p>
+            <noscript>
+              <div class="no-js-message">
+                Discovery is running in the background. Please refresh this page in a few moments to see the results.
+              </div>
+            </noscript>
+          {{else if eq .Discovery.Status "resolved_found"}}
+            <h3>✓ Discovery complete</h3>
+            <p>{{.Discovery.Message}}</p>
+          {{else if eq .Discovery.Status "resolved_none"}}
+            <h3>No feeds found</h3>
+            <p>{{.Discovery.Message}}</p>
+          {{else if eq .Discovery.Status "error"}}
+            <h3>Discovery failed</h3>
+            <p>{{.Discovery.Message}}</p>
+          {{end}}
+        {{end}}
+      </section>
+
+      <section class="results-section" id="results-section">
+        {{if .Results}}
+        <h2 id="results-header">Results ({{len .Results}})</h2>
+        <ul class="results-list" id="results-list">
+          {{range .Results}}
+          <li class="result-item">
+            <h3 class="result-title">{{.Title}}</h3>
+            <p class="result-url">
+              <strong>Feed:</strong> <a href="{{.FeedURL}}" target="_blank" rel="noopener noreferrer">{{.FeedURL}}</a>
+            </p>
+            {{if .SiteURL}}
+            <p class="result-url">
+              <strong>Site:</strong> <a href="{{.SiteURL}}" target="_blank" rel="noopener noreferrer">{{.SiteURL}}</a>
+            </p>
+            {{end}}
+            <span class="result-source {{.Source}}">{{.Source}}</span>
+            {{if .Reason}}
+            <p class="result-reason">{{.Reason}}</p>
+            {{end}}
+          </li>
+          {{end}}
+        </ul>
+        {{else if .Query}}
+        <div class="empty-state" id="empty-state">
+          <p>No results found for "{{.Query}}"</p>
+          {{if not .Discovery}}
+          <p>Try entering a URL or domain to discover feeds.</p>
+          {{end}}
+        </div>
+        {{else}}
+        <div class="empty-state" id="empty-state">
+          <p>Enter a search term above to find feeds</p>
+          <p>Try searching for popular sites like "techcrunch.com" or "arstechnica.com"</p>
+        </div>
+        {{end}}
+        {{if not .Results}}
+        <ul class="results-list" id="results-list" style="display: none;"></ul>
+        {{end}}
+      </section>
+    </main>
+  </div>
+
+  <script src="/static/js/feed-search.js"></script>
+</body>
+
+</html>
+{{end}}
