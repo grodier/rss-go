@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -441,20 +442,40 @@ func (j *DiscoveryJob) parseAtom(body []byte) *models.FeedCandidate {
 
 // isPrivateIP checks if a hostname is a private IP (basic SSRF protection)
 func isPrivateIP(hostname string) bool {
-	// Basic check for localhost and private IP ranges
-	privateHosts := []string{"localhost", "127.0.0.1", "0.0.0.0", "::1"}
-	for _, ph := range privateHosts {
-		if hostname == ph {
-			return true
-		}
+	// Check for localhost hostname
+	if hostname == "localhost" {
+		return true
 	}
 
-	// Check for private IP prefixes
-	privatePrefixes := []string{"10.", "172.16.", "192.168.", "169.254."}
-	for _, prefix := range privatePrefixes {
-		if strings.HasPrefix(hostname, prefix) {
-			return true
-		}
+	// Parse hostname as IP address
+	ip := net.ParseIP(hostname)
+	if ip == nil {
+		// Not a valid IP address (likely a domain name)
+		// Domain names are allowed - only IPs need checking
+		return false
+	}
+
+	// Use Go's built-in methods for comprehensive IP range checking
+	// IsPrivate() checks RFC 1918 (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16)
+	// and RFC 4193 (IPv6 unique local addresses fc00::/7)
+	// and RFC 6598 (100.64.0.0/10)
+	if ip.IsPrivate() {
+		return true
+	}
+
+	// IsLoopback() checks 127.0.0.0/8 and ::1
+	if ip.IsLoopback() {
+		return true
+	}
+
+	// IsLinkLocalUnicast() checks 169.254.0.0/16 and fe80::/10
+	if ip.IsLinkLocalUnicast() {
+		return true
+	}
+
+	// Check for unspecified addresses (0.0.0.0 and ::)
+	if ip.IsUnspecified() {
+		return true
 	}
 
 	return false

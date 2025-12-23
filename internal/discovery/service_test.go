@@ -579,6 +579,7 @@ func TestIsPrivateIP(t *testing.T) {
 		hostname string
 		expected bool
 	}{
+		// Localhost variants
 		{
 			name:     "localhost",
 			hostname: "localhost",
@@ -590,7 +591,17 @@ func TestIsPrivateIP(t *testing.T) {
 			expected: true,
 		},
 		{
-			name:     "0.0.0.0",
+			name:     "127.0.0.255 (loopback range)",
+			hostname: "127.0.0.255",
+			expected: true,
+		},
+		{
+			name:     "127.255.255.255 (end of loopback)",
+			hostname: "127.255.255.255",
+			expected: true,
+		},
+		{
+			name:     "0.0.0.0 (unspecified)",
 			hostname: "0.0.0.0",
 			expected: true,
 		},
@@ -600,33 +611,116 @@ func TestIsPrivateIP(t *testing.T) {
 			expected: true,
 		},
 		{
-			name:     "10.x.x.x",
-			hostname: "10.0.0.1",
+			name:     "IPv6 unspecified",
+			hostname: "::",
+			expected: true,
+		},
+
+		// RFC 1918 private ranges
+		{
+			name:     "10.0.0.0 (start of 10.0.0.0/8)",
+			hostname: "10.0.0.0",
 			expected: true,
 		},
 		{
-			name:     "172.16.x.x",
+			name:     "10.255.255.255 (end of 10.0.0.0/8)",
+			hostname: "10.255.255.255",
+			expected: true,
+		},
+		{
+			name:     "172.16.0.0 (start of 172.16.0.0/12)",
+			hostname: "172.16.0.0",
+			expected: true,
+		},
+		{
+			name:     "172.16.0.1",
 			hostname: "172.16.0.1",
 			expected: true,
 		},
 		{
-			name:     "192.168.x.x",
+			name:     "172.17.0.1 (within 172.16.0.0/12 - previously bypassed)",
+			hostname: "172.17.0.1",
+			expected: true,
+		},
+		{
+			name:     "172.31.255.255 (end of 172.16.0.0/12 - previously bypassed)",
+			hostname: "172.31.255.255",
+			expected: true,
+		},
+		{
+			name:     "172.32.0.1 (outside private range - should be public)",
+			hostname: "172.32.0.1",
+			expected: false,
+		},
+		{
+			name:     "192.168.0.0 (start of 192.168.0.0/16)",
+			hostname: "192.168.0.0",
+			expected: true,
+		},
+		{
+			name:     "192.168.1.1",
 			hostname: "192.168.1.1",
 			expected: true,
 		},
 		{
-			name:     "169.254.x.x",
+			name:     "192.168.255.255 (end of 192.168.0.0/16)",
+			hostname: "192.168.255.255",
+			expected: true,
+		},
+
+		// Link-local addresses
+		{
+			name:     "169.254.0.0 (start of link-local)",
+			hostname: "169.254.0.0",
+			expected: true,
+		},
+		{
+			name:     "169.254.0.1",
 			hostname: "169.254.0.1",
 			expected: true,
 		},
 		{
-			name:     "public IP",
+			name:     "169.254.255.255 (end of link-local)",
+			hostname: "169.254.255.255",
+			expected: true,
+		},
+
+		// IPv6 private ranges
+		{
+			name:     "fc00::1 (IPv6 unique local)",
+			hostname: "fc00::1",
+			expected: true,
+		},
+		{
+			name:     "fd00::1 (IPv6 unique local)",
+			hostname: "fd00::1",
+			expected: true,
+		},
+		{
+			name:     "fe80::1 (IPv6 link-local)",
+			hostname: "fe80::1",
+			expected: true,
+		},
+
+		// Public IPs (should not be blocked)
+		{
+			name:     "8.8.8.8 (Google DNS)",
 			hostname: "8.8.8.8",
+			expected: false,
+		},
+		{
+			name:     "1.1.1.1 (Cloudflare DNS)",
+			hostname: "1.1.1.1",
 			expected: false,
 		},
 		{
 			name:     "public domain",
 			hostname: "example.com",
+			expected: false,
+		},
+		{
+			name:     "2001:4860:4860::8888 (Google IPv6 DNS)",
+			hostname: "2001:4860:4860::8888",
 			expected: false,
 		},
 	}
