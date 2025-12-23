@@ -100,11 +100,26 @@ func (s *Server) handleHealthcheck(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
 }
 
+// getUserID retrieves the authenticated user's ID from the session
+func (s *Server) getUserID(r *http.Request) (int, error) {
+	userID := s.sessionManager.GetInt(r.Context(), "authenticatedUserID")
+	if userID == 0 {
+		return 0, errors.New("not authenticated")
+	}
+	return userID, nil
+}
+
 func (s *Server) handleRootView(w http.ResponseWriter, r *http.Request) {
 	// Render different templates based on authentication status
 	if s.isAuthenticated(r) {
-		// Authenticated users see the dashboard
-		feeds, err := s.FeedService.GetLatestFeeds()
+		// Authenticated users see the dashboard with their subscriptions
+		userID, err := s.getUserID(r)
+		if err != nil {
+			s.serverError(w, r, err)
+			return
+		}
+
+		feeds, err := s.FeedService.GetUserFeeds(userID)
 		if err != nil {
 			s.serverError(w, r, err)
 			return
@@ -151,7 +166,13 @@ func (s *Server) handleAboutView(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleFeedsList(w http.ResponseWriter, r *http.Request) {
-	feeds, err := s.FeedService.GetLatestFeeds()
+	userID, err := s.getUserID(r)
+	if err != nil {
+		s.serverError(w, r, err)
+		return
+	}
+
+	feeds, err := s.FeedService.GetUserFeeds(userID)
 	if err != nil {
 		s.serverError(w, r, err)
 		return
@@ -189,6 +210,12 @@ func (s *Server) handleFeedView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userID, err := s.getUserID(r)
+	if err != nil {
+		s.serverError(w, r, err)
+		return
+	}
+
 	feed, err := s.FeedService.GetFeedByID(int(id))
 	if err != nil {
 		if errors.Is(err, models.ErrNoRecord) {
@@ -196,6 +223,18 @@ func (s *Server) handleFeedView(w http.ResponseWriter, r *http.Request) {
 		} else {
 			s.serverError(w, r, err)
 		}
+		return
+	}
+
+	// Check if user is subscribed to this feed
+	subscribed, err := s.FeedService.IsUserSubscribed(userID, feed.ID)
+	if err != nil {
+		s.serverError(w, r, err)
+		return
+	}
+
+	if !subscribed {
+		http.NotFound(w, r)
 		return
 	}
 
@@ -234,11 +273,15 @@ func (s *Server) handleFeedCreatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userID, err := s.getUserID(r)
+	if err != nil {
+		s.serverError(w, r, err)
+		return
+	}
+
 	var v validator.Validator
 
-	v.Check(validator.NotBlank(newFeed.Title), "title", "This field cannot be blank")
-	v.Check(validator.MaxChars(newFeed.Title, 100), "title", "This field cannot be more than 100 characters long")
-	v.Check(validator.NotBlank(newFeed.Description), "description", "This field cannot be blank")
+	v.Check(validator.NotBlank(newFeed.FeedURL), "feed_url", "This field cannot be blank")
 
 	if !v.Valid() {
 		data := feedCreateData{
@@ -252,14 +295,85 @@ func (s *Server) handleFeedCreatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.FeedService.CreateFeed(&newFeed); err != nil {
+	// Subscribe user to the feed (creates feed if it doesn't exist)
+	feed, err := s.FeedService.SubscribeToFeed(userID, newFeed.FeedURL)
+	if err != nil {
 		s.serverError(w, r, err)
 		return
 	}
 
-	s.sessionManager.Put(r.Context(), "flash", "Feed successfully created")
+	s.sessionManager.Put(r.Context(), "flash", "Successfully subscribed to feed")
 
-	http.Redirect(w, r, fmt.Sprintf("/feeds/%d", newFeed.ID), http.StatusSeeOther)
+	http.Redirect(w, r, fmt.Sprintf("/feeds/%d", feed.ID), http.StatusSeeOther)
+}
+
+func (s *Server) handleFeedSubscribe(w http.ResponseWriter, r *http.Request) {
+	userID, err := s.getUserID(r)
+	if err != nil {
+		s.serverError(w, r, err)
+		return
+	}
+
+	feedURL := r.PostFormValue("feed_url")
+	if feedURL == "" {
+		s.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	feed, err := s.FeedService.SubscribeToFeed(userID, feedURL)
+	if err != nil {
+		s.serverError(w, r, err)
+		return
+	}
+
+	s.sessionManager.Put(r.Context(), "flash", "Successfully subscribed to feed")
+
+	// Check if request wants JSON (for AJAX)
+	if r.Header.Get("Accept") == "application/json" {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success":  true,
+			"feed_id":  feed.ID,
+			"message":  "Successfully subscribed to feed",
+		})
+		return
+	}
+
+	http.Redirect(w, r, "/feeds", http.StatusSeeOther)
+}
+
+func (s *Server) handleFeedUnsubscribe(w http.ResponseWriter, r *http.Request) {
+	userID, err := s.getUserID(r)
+	if err != nil {
+		s.serverError(w, r, err)
+		return
+	}
+
+	id, err := s.readIDParam(r)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	err = s.FeedService.UnsubscribeFromFeed(userID, int(id))
+	if err != nil {
+		s.serverError(w, r, err)
+		return
+	}
+
+	s.sessionManager.Put(r.Context(), "flash", "Successfully unsubscribed from feed")
+
+	// Check if request wants JSON (for AJAX)
+	if r.Header.Get("Accept") == "application/json" {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": true,
+			"message": "Successfully unsubscribed from feed",
+		})
+		return
+	}
+
+	http.Redirect(w, r, "/feeds", http.StatusSeeOther)
 }
 
 type userSignUpData struct {

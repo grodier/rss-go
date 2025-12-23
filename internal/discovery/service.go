@@ -23,19 +23,21 @@ const (
 
 // Service orchestrates feed discovery operations
 type Service struct {
-	store             models.DiscoveryService
-	queue             queue.JobQueue
-	logger            *slog.Logger
-	client            *http.Client
-	allowPrivateIPs   bool // For testing purposes
+	store           models.DiscoveryService
+	feedService     models.FeedService
+	queue           queue.JobQueue
+	logger          *slog.Logger
+	client          *http.Client
+	allowPrivateIPs bool // For testing purposes
 }
 
 // NewService creates a new discovery service
-func NewService(store models.DiscoveryService, q queue.JobQueue, logger *slog.Logger) *Service {
+func NewService(store models.DiscoveryService, feedService models.FeedService, q queue.JobQueue, logger *slog.Logger) *Service {
 	return &Service{
-		store:  store,
-		queue:  q,
-		logger: logger,
+		store:       store,
+		feedService: feedService,
+		queue:       q,
+		logger:      logger,
 		client: &http.Client{
 			Timeout: requestTimeout,
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -260,13 +262,27 @@ func (j *DiscoveryJob) Run(ctx context.Context) error {
 		d.Results = feeds
 	})
 
-	// Add discovered feeds to known feeds index
+	// Add discovered feeds to FeedService for persistence
 	for _, feed := range feeds {
-		s.store.AddKnownFeed(feed)
-		s.logger.Info("added discovered feed to known feeds",
-			"feed_url", feed.FeedURL,
-			"title", feed.Title,
+		_, err := s.feedService.GetOrCreateFeed(
+			feed.FeedURL,
+			feed.Title,
+			"", // description not available from discovery
+			feed.SiteURL,
+			"discovered",
+			feed.Confidence,
 		)
+		if err != nil {
+			s.logger.Error("failed to add discovered feed to FeedService",
+				"feed_url", feed.FeedURL,
+				"error", err,
+			)
+		} else {
+			s.logger.Info("added discovered feed to FeedService",
+				"feed_url", feed.FeedURL,
+				"title", feed.Title,
+			)
+		}
 	}
 
 	return nil

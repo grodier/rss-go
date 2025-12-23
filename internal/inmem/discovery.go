@@ -3,7 +3,6 @@ package inmem
 import (
 	"crypto/rand"
 	"encoding/hex"
-	"strings"
 	"sync"
 	"time"
 
@@ -17,103 +16,32 @@ const (
 // DiscoveryStore is an in-memory implementation of DiscoveryService
 type DiscoveryStore struct {
 	mu           sync.RWMutex
-	knownFeeds   []models.FeedCandidate            // Known feeds for search
-	feedsByURL   map[string]models.FeedCandidate   // Index by FeedURL for deduplication
-	discoveries  map[string]*models.Discovery       // Active discoveries by ID
-	discoveryIdx map[string]string                  // (userKey, queryNorm) -> discoveryID
+	feedService  models.FeedService              // Feed service for searching feeds
+	discoveries  map[string]*models.Discovery     // Active discoveries by ID
+	discoveryIdx map[string]string                // (userKey, queryNorm) -> discoveryID
 }
 
 // NewDiscoveryStore creates a new in-memory discovery store
-func NewDiscoveryStore() *DiscoveryStore {
-	store := &DiscoveryStore{
-		knownFeeds:   make([]models.FeedCandidate, 0),
-		feedsByURL:   make(map[string]models.FeedCandidate),
+func NewDiscoveryStore(feedService models.FeedService) *DiscoveryStore {
+	return &DiscoveryStore{
+		feedService:  feedService,
 		discoveries:  make(map[string]*models.Discovery),
 		discoveryIdx: make(map[string]string),
 	}
-
-	// Seed with some known feeds for testing
-	store.seedKnownFeeds()
-
-	return store
 }
 
-// seedKnownFeeds adds some well-known RSS feeds for testing
-func (s *DiscoveryStore) seedKnownFeeds() {
-	knownFeeds := []models.FeedCandidate{
-		{
-			ID:         generateID(),
-			Title:      "Hacker News",
-			FeedURL:    "https://news.ycombinator.com/rss",
-			SiteURL:    "https://news.ycombinator.com",
-			Source:     "known",
-			Confidence: 100,
-			Reason:     "Well-known tech news aggregator",
-		},
-		{
-			ID:         generateID(),
-			Title:      "The Verge",
-			FeedURL:    "https://www.theverge.com/rss/index.xml",
-			SiteURL:    "https://www.theverge.com",
-			Source:     "known",
-			Confidence: 100,
-			Reason:     "Popular technology news site",
-		},
-		{
-			ID:         generateID(),
-			Title:      "TechCrunch",
-			FeedURL:    "https://techcrunch.com/feed/",
-			SiteURL:    "https://techcrunch.com",
-			Source:     "known",
-			Confidence: 100,
-			Reason:     "Startup and technology news",
-		},
-		{
-			ID:         generateID(),
-			Title:      "Ars Technica",
-			FeedURL:    "https://feeds.arstechnica.com/arstechnica/index",
-			SiteURL:    "https://arstechnica.com",
-			Source:     "known",
-			Confidence: 100,
-			Reason:     "Technology news and information",
-		},
-		{
-			ID:         generateID(),
-			Title:      "Wired",
-			FeedURL:    "https://www.wired.com/feed/rss",
-			SiteURL:    "https://www.wired.com",
-			Source:     "known",
-			Confidence: 100,
-			Reason:     "Technology, science, and culture magazine",
-		},
-	}
-
-	for _, feed := range knownFeeds {
-		s.AddKnownFeed(feed)
-	}
-}
-
-// SearchKnown searches known feeds by normalized query
+// SearchKnown searches feeds by normalized query using FeedService
 func (s *DiscoveryStore) SearchKnown(queryNorm string) []models.FeedCandidate {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	if queryNorm == "" {
+	// Delegate to FeedService
+	feeds, err := s.feedService.SearchFeeds(queryNorm)
+	if err != nil {
 		return []models.FeedCandidate{}
 	}
 
-	results := make([]models.FeedCandidate, 0)
-	queryLower := strings.ToLower(queryNorm)
-
-	for _, feed := range s.knownFeeds {
-		// Search in title, feedURL, and siteURL
-		titleMatch := strings.Contains(strings.ToLower(feed.Title), queryLower)
-		feedURLMatch := strings.Contains(strings.ToLower(feed.FeedURL), queryLower)
-		siteURLMatch := strings.Contains(strings.ToLower(feed.SiteURL), queryLower)
-
-		if titleMatch || feedURLMatch || siteURLMatch {
-			results = append(results, feed)
-		}
+	// Convert Feed to FeedCandidate
+	results := make([]models.FeedCandidate, 0, len(feeds))
+	for _, feed := range feeds {
+		results = append(results, feedToCandidate(feed))
 	}
 
 	return results
@@ -121,30 +49,39 @@ func (s *DiscoveryStore) SearchKnown(queryNorm string) []models.FeedCandidate {
 
 // Suggest returns autocomplete suggestions for partial queries
 func (s *DiscoveryStore) Suggest(partial string) []models.FeedCandidate {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
 	if len(partial) < 2 {
 		return []models.FeedCandidate{}
 	}
 
-	results := make([]models.FeedCandidate, 0)
-	partialLower := strings.ToLower(partial)
+	// Delegate to FeedService
+	feeds, err := s.feedService.SearchFeeds(partial)
+	if err != nil {
+		return []models.FeedCandidate{}
+	}
 
-	for _, feed := range s.knownFeeds {
-		// Prefix match on title or URL
-		titleMatch := strings.HasPrefix(strings.ToLower(feed.Title), partialLower)
-		urlMatch := strings.Contains(strings.ToLower(feed.SiteURL), partialLower)
-
-		if titleMatch || urlMatch {
-			results = append(results, feed)
-			if len(results) >= 10 {
-				break
-			}
+	// Convert Feed to FeedCandidate and limit to 10 results
+	results := make([]models.FeedCandidate, 0, 10)
+	for _, feed := range feeds {
+		results = append(results, feedToCandidate(feed))
+		if len(results) >= 10 {
+			break
 		}
 	}
 
 	return results
+}
+
+// feedToCandidate converts a Feed to a FeedCandidate
+func feedToCandidate(feed *models.Feed) models.FeedCandidate {
+	return models.FeedCandidate{
+		ID:         generateID(), // Generate unique ID for this candidate
+		Title:      feed.Title,
+		FeedURL:    feed.FeedURL,
+		SiteURL:    feed.SiteURL,
+		Source:     feed.Source,
+		Confidence: feed.Confidence,
+		Reason:     "", // Can be populated based on source if needed
+	}
 }
 
 // CreateOrGetDiscovery creates a new discovery or returns existing one
@@ -237,20 +174,6 @@ func (s *DiscoveryStore) UpdateDiscovery(id string, fn func(*models.Discovery)) 
 
 	fn(discovery)
 	discovery.UpdatedAt = time.Now()
-}
-
-// AddKnownFeed adds a feed to the known feeds index
-func (s *DiscoveryStore) AddKnownFeed(feed models.FeedCandidate) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	// Deduplicate by FeedURL
-	if _, exists := s.feedsByURL[feed.FeedURL]; exists {
-		return
-	}
-
-	s.feedsByURL[feed.FeedURL] = feed
-	s.knownFeeds = append(s.knownFeeds, feed)
 }
 
 // GetDiscoveryEvents returns events for SSE streaming, optionally from a sequence

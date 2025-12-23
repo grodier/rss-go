@@ -95,8 +95,63 @@ func (m *mockDiscoveryStore) UpdateDiscovery(id string, fn func(*models.Discover
 	}
 }
 
-func (m *mockDiscoveryStore) AddKnownFeed(feed models.FeedCandidate) {
-	m.knownFeeds = append(m.knownFeeds, feed)
+// mockFeedService is a simple mock implementation of models.FeedService for testing
+type mockFeedService struct {
+	feeds map[string]*models.Feed
+}
+
+func newMockFeedService() *mockFeedService {
+	return &mockFeedService{
+		feeds: make(map[string]*models.Feed),
+	}
+}
+
+func (m *mockFeedService) GetUserFeeds(userID int) ([]*models.Feed, error) {
+	return nil, nil
+}
+
+func (m *mockFeedService) SubscribeToFeed(userID int, feedURL string) (*models.Feed, error) {
+	return nil, nil
+}
+
+func (m *mockFeedService) UnsubscribeFromFeed(userID, feedID int) error {
+	return nil
+}
+
+func (m *mockFeedService) IsUserSubscribed(userID, feedID int) (bool, error) {
+	return false, nil
+}
+
+func (m *mockFeedService) GetFeedByID(feedID int) (*models.Feed, error) {
+	return nil, nil
+}
+
+func (m *mockFeedService) GetFeedByURL(feedURL string) (*models.Feed, error) {
+	feed, ok := m.feeds[feedURL]
+	if !ok {
+		return nil, models.ErrNoRecord
+	}
+	return feed, nil
+}
+
+func (m *mockFeedService) GetOrCreateFeed(feedURL, title, description, siteURL, source string, confidence int) (*models.Feed, error) {
+	if feed, ok := m.feeds[feedURL]; ok {
+		return feed, nil
+	}
+	feed := &models.Feed{
+		ID:       len(m.feeds) + 1,
+		FeedURL:  feedURL,
+		Title:    title,
+		SiteURL:  siteURL,
+		Source:   source,
+		Confidence: confidence,
+	}
+	m.feeds[feedURL] = feed
+	return feed, nil
+}
+
+func (m *mockFeedService) SearchFeeds(query string) ([]*models.Feed, error) {
+	return nil, nil
 }
 
 func (m *mockDiscoveryStore) GetDiscoveryEvents(id string, fromSeq int64) []models.DiscoveryEvent {
@@ -172,7 +227,7 @@ func TestShouldDiscover(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			store := newMockDiscoveryStore()
 			q := queue.NewInMemQueue(1, logger)
-			service := NewService(store, q, logger)
+			service := NewService(store, newMockFeedService(), q, logger)
 
 			if tt.existing != nil {
 				store.discoveries[tt.existing.ID] = tt.existing
@@ -194,7 +249,7 @@ func TestStartDiscovery(t *testing.T) {
 	t.Run("create new discovery", func(t *testing.T) {
 		store := newMockDiscoveryStore()
 		q := queue.NewInMemQueue(10, logger)
-		service := NewService(store, q, logger)
+		service := NewService(store, newMockFeedService(), q, logger)
 
 		discovery, err := service.StartDiscovery(context.Background(), "user1", "example.com", "https://example.com")
 
@@ -219,7 +274,7 @@ func TestStartDiscovery(t *testing.T) {
 	t.Run("return existing pending discovery", func(t *testing.T) {
 		store := newMockDiscoveryStore()
 		q := queue.NewInMemQueue(10, logger)
-		service := NewService(store, q, logger)
+		service := NewService(store, newMockFeedService(), q, logger)
 
 		// Create first discovery
 		discovery1, _ := service.StartDiscovery(context.Background(), "user1", "example.com", "https://example.com")
@@ -239,7 +294,7 @@ func TestStartDiscovery(t *testing.T) {
 	t.Run("reset completed discovery", func(t *testing.T) {
 		store := newMockDiscoveryStore()
 		q := queue.NewInMemQueue(10, logger)
-		service := NewService(store, q, logger)
+		service := NewService(store, newMockFeedService(), q, logger)
 
 		// Create and complete a discovery
 		discovery, _ := service.StartDiscovery(context.Background(), "user1", "example.com", "https://example.com")
@@ -274,7 +329,7 @@ func TestDiscoveryJob_ParseRSS(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
 	store := newMockDiscoveryStore()
 	q := queue.NewInMemQueue(1, logger)
-	service := NewService(store, q, logger)
+	service := NewService(store, newMockFeedService(), q, logger)
 
 	job := &DiscoveryJob{
 		DiscoveryID: "test-1",
@@ -314,7 +369,7 @@ func TestDiscoveryJob_ParseAtom(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
 	store := newMockDiscoveryStore()
 	q := queue.NewInMemQueue(1, logger)
-	service := NewService(store, q, logger)
+	service := NewService(store, newMockFeedService(), q, logger)
 
 	job := &DiscoveryJob{
 		DiscoveryID: "test-1",
@@ -367,8 +422,9 @@ func TestDiscoveryJob_Run(t *testing.T) {
 		defer ts.Close()
 
 		store := newMockDiscoveryStore()
+		feedService := newMockFeedService()
 		q := queue.NewInMemQueue(10, logger)
-		service := NewService(store, q, logger)
+		service := NewService(store, feedService, q, logger)
 		service.allowPrivateIPs = true // Allow localhost for testing
 
 		discovery, _ := store.CreateOrGetDiscovery("user1", "example.com", ts.URL)
@@ -399,9 +455,9 @@ func TestDiscoveryJob_Run(t *testing.T) {
 			t.Errorf("expected title 'Test Feed', got %q", updated.Results[0].Title)
 		}
 
-		// Verify feed was added to known feeds
-		if len(store.knownFeeds) != 1 {
-			t.Errorf("expected 1 known feed, got %d", len(store.knownFeeds))
+		// Verify feed was added to FeedService
+		if len(feedService.feeds) != 1 {
+			t.Errorf("expected 1 feed in FeedService, got %d", len(feedService.feeds))
 		}
 	})
 
@@ -415,7 +471,7 @@ func TestDiscoveryJob_Run(t *testing.T) {
 
 		store := newMockDiscoveryStore()
 		q := queue.NewInMemQueue(10, logger)
-		service := NewService(store, q, logger)
+		service := NewService(store, newMockFeedService(), q, logger)
 		service.allowPrivateIPs = true // Allow localhost for testing
 
 		discovery, _ := store.CreateOrGetDiscovery("user1", "example.com", ts.URL)
@@ -452,7 +508,7 @@ func TestDiscoveryJob_Run(t *testing.T) {
 
 		store := newMockDiscoveryStore()
 		q := queue.NewInMemQueue(10, logger)
-		service := NewService(store, q, logger)
+		service := NewService(store, newMockFeedService(), q, logger)
 		service.allowPrivateIPs = true // Allow localhost for testing
 
 		discovery, _ := store.CreateOrGetDiscovery("user1", "example.com", ts.URL)

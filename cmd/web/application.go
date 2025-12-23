@@ -56,10 +56,10 @@ func (app *Application) Run(ctx context.Context, args []string) error {
 	srv.FeedService = feedService
 	srv.UserService = userService
 
-	// Initialize discovery infrastructure
-	discoveryStore := inmem.NewDiscoveryStore()
+	// Initialize discovery infrastructure (inject FeedService for persistence)
+	discoveryStore := inmem.NewDiscoveryStore(feedService)
 	jobQueue := queue.NewInMemQueue(3, app.logger) // 3 worker threads
-	discoveryService := discovery.NewService(discoveryStore, jobQueue, app.logger)
+	discoveryService := discovery.NewService(discoveryStore, feedService, jobQueue, app.logger)
 
 	srv.DiscoveryStore = discoveryStore
 	srv.DiscoveryService = discoveryService

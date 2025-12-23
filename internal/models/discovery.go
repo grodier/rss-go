@@ -70,9 +70,6 @@ type DiscoveryService interface {
 	// UpdateDiscovery atomically updates a discovery
 	UpdateDiscovery(id string, fn func(*Discovery))
 
-	// AddKnownFeed adds a feed to the known feeds index
-	AddKnownFeed(feed FeedCandidate)
-
 	// GetDiscoveryEvents returns events for SSE streaming, optionally from a sequence
 	GetDiscoveryEvents(id string, fromSeq int64) []DiscoveryEvent
 }
