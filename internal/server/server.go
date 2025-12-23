@@ -2,17 +2,20 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/go-playground/form/v4"
+	"github.com/grodier/rss-go/internal/discovery"
 	"github.com/grodier/rss-go/internal/models"
 	"github.com/grodier/rss-go/internal/tmpl"
 	"github.com/grodier/rss-go/internal/validator"
@@ -23,8 +26,10 @@ type Server struct {
 	Port int
 	Env  string
 
-	FeedService models.FeedService
-	UserService models.UserService
+	FeedService      models.FeedService
+	UserService      models.UserService
+	DiscoveryStore   models.DiscoveryService
+	DiscoveryService *discovery.Service
 
 	template       *tmpl.Template
 	server         *http.Server
@@ -95,11 +100,26 @@ func (s *Server) handleHealthcheck(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
 }
 
+// getUserID retrieves the authenticated user's ID from the session
+func (s *Server) getUserID(r *http.Request) (int, error) {
+	userID := s.sessionManager.GetInt(r.Context(), "authenticatedUserID")
+	if userID == 0 {
+		return 0, errors.New("not authenticated")
+	}
+	return userID, nil
+}
+
 func (s *Server) handleRootView(w http.ResponseWriter, r *http.Request) {
 	// Render different templates based on authentication status
 	if s.isAuthenticated(r) {
-		// Authenticated users see the dashboard
-		feeds, err := s.FeedService.GetLatestFeeds()
+		// Authenticated users see the dashboard with their subscriptions
+		userID, err := s.getUserID(r)
+		if err != nil {
+			s.serverError(w, r, err)
+			return
+		}
+
+		feeds, err := s.FeedService.GetUserFeeds(userID)
 		if err != nil {
 			s.serverError(w, r, err)
 			return
@@ -146,7 +166,13 @@ func (s *Server) handleAboutView(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleFeedsList(w http.ResponseWriter, r *http.Request) {
-	feeds, err := s.FeedService.GetLatestFeeds()
+	userID, err := s.getUserID(r)
+	if err != nil {
+		s.serverError(w, r, err)
+		return
+	}
+
+	feeds, err := s.FeedService.GetUserFeeds(userID)
 	if err != nil {
 		s.serverError(w, r, err)
 		return
@@ -184,6 +210,12 @@ func (s *Server) handleFeedView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userID, err := s.getUserID(r)
+	if err != nil {
+		s.serverError(w, r, err)
+		return
+	}
+
 	feed, err := s.FeedService.GetFeedByID(int(id))
 	if err != nil {
 		if errors.Is(err, models.ErrNoRecord) {
@@ -191,6 +223,18 @@ func (s *Server) handleFeedView(w http.ResponseWriter, r *http.Request) {
 		} else {
 			s.serverError(w, r, err)
 		}
+		return
+	}
+
+	// Check if user is subscribed to this feed
+	subscribed, err := s.FeedService.IsUserSubscribed(userID, feed.ID)
+	if err != nil {
+		s.serverError(w, r, err)
+		return
+	}
+
+	if !subscribed {
+		http.NotFound(w, r)
 		return
 	}
 
@@ -229,11 +273,15 @@ func (s *Server) handleFeedCreatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userID, err := s.getUserID(r)
+	if err != nil {
+		s.serverError(w, r, err)
+		return
+	}
+
 	var v validator.Validator
 
-	v.Check(validator.NotBlank(newFeed.Title), "title", "This field cannot be blank")
-	v.Check(validator.MaxChars(newFeed.Title, 100), "title", "This field cannot be more than 100 characters long")
-	v.Check(validator.NotBlank(newFeed.Description), "description", "This field cannot be blank")
+	v.Check(validator.NotBlank(newFeed.FeedURL), "feed_url", "This field cannot be blank")
 
 	if !v.Valid() {
 		data := feedCreateData{
@@ -247,14 +295,85 @@ func (s *Server) handleFeedCreatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.FeedService.CreateFeed(&newFeed); err != nil {
+	// Subscribe user to the feed (creates feed if it doesn't exist)
+	feed, err := s.FeedService.SubscribeToFeed(userID, newFeed.FeedURL)
+	if err != nil {
 		s.serverError(w, r, err)
 		return
 	}
 
-	s.sessionManager.Put(r.Context(), "flash", "Feed successfully created")
+	s.sessionManager.Put(r.Context(), "flash", "Successfully subscribed to feed")
 
-	http.Redirect(w, r, fmt.Sprintf("/feeds/%d", newFeed.ID), http.StatusSeeOther)
+	http.Redirect(w, r, fmt.Sprintf("/feeds/%d", feed.ID), http.StatusSeeOther)
+}
+
+func (s *Server) handleFeedSubscribe(w http.ResponseWriter, r *http.Request) {
+	userID, err := s.getUserID(r)
+	if err != nil {
+		s.serverError(w, r, err)
+		return
+	}
+
+	feedURL := r.PostFormValue("feed_url")
+	if feedURL == "" {
+		s.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	feed, err := s.FeedService.SubscribeToFeed(userID, feedURL)
+	if err != nil {
+		s.serverError(w, r, err)
+		return
+	}
+
+	s.sessionManager.Put(r.Context(), "flash", "Successfully subscribed to feed")
+
+	// Check if request wants JSON (for AJAX)
+	if r.Header.Get("Accept") == "application/json" {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success":  true,
+			"feed_id":  feed.ID,
+			"message":  "Successfully subscribed to feed",
+		})
+		return
+	}
+
+	http.Redirect(w, r, "/feeds", http.StatusSeeOther)
+}
+
+func (s *Server) handleFeedUnsubscribe(w http.ResponseWriter, r *http.Request) {
+	userID, err := s.getUserID(r)
+	if err != nil {
+		s.serverError(w, r, err)
+		return
+	}
+
+	id, err := s.readIDParam(r)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	err = s.FeedService.UnsubscribeFromFeed(userID, int(id))
+	if err != nil {
+		s.serverError(w, r, err)
+		return
+	}
+
+	s.sessionManager.Put(r.Context(), "flash", "Successfully unsubscribed from feed")
+
+	// Check if request wants JSON (for AJAX)
+	if r.Header.Get("Accept") == "application/json" {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": true,
+			"message": "Successfully unsubscribed from feed",
+		})
+		return
+	}
+
+	http.Redirect(w, r, "/feeds", http.StatusSeeOther)
 }
 
 type userSignUpData struct {
@@ -410,4 +529,309 @@ func (s *Server) handleUserLogoutPost(w http.ResponseWriter, r *http.Request) {
 	s.sessionManager.Put(r.Context(), "flash", "You've been logged out successfully!")
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+// Feed search and discovery handlers
+
+type feedSearchData struct {
+	Query           string
+	Results         []models.FeedCandidate
+	Discovery       *models.Discovery
+	IsAuthenticated bool
+	CSRFToken       string
+	Flash           string
+}
+
+func (s *Server) handleFeedSearch(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query().Get("q")
+	discoveryID := r.URL.Query().Get("d")
+
+	data := feedSearchData{
+		Query:           query,
+		Results:         []models.FeedCandidate{},
+		IsAuthenticated: s.isAuthenticated(r),
+		CSRFToken:       nosurf.Token(r),
+		Flash:           s.sessionManager.PopString(r.Context(), "flash"),
+	}
+
+	// If query is provided, search known feeds
+	if query != "" {
+		queryNorm := models.NormalizeQuery(query)
+		data.Results = s.DiscoveryStore.SearchKnown(queryNorm)
+	}
+
+	// If discovery ID is provided, include discovery state
+	if discoveryID != "" {
+		if discovery, ok := s.DiscoveryStore.GetDiscovery(discoveryID); ok {
+			data.Discovery = discovery
+			// Merge discovery results with known results
+			if len(discovery.Results) > 0 {
+				data.Results = append(data.Results, discovery.Results...)
+			}
+		}
+	}
+
+	s.render(w, r, http.StatusOK, "feed_search.tmpl.html", data)
+}
+
+func (s *Server) handleFeedSearchPost(w http.ResponseWriter, r *http.Request) {
+	s.logger.Info("received search POST request",
+		"method", r.Method,
+		"content_type", r.Header.Get("Content-Type"),
+		"accept", r.Header.Get("Accept"),
+	)
+
+	query := r.FormValue("q")
+
+	s.logger.Info("processing search query",
+		"query", query,
+		"is_empty", query == "",
+	)
+
+	if query == "" {
+		s.logger.Warn("search query is empty")
+		s.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	queryNorm := models.NormalizeQuery(query)
+	s.logger.Info("normalized search query",
+		"original", query,
+		"normalized", queryNorm,
+	)
+
+	// Search known feeds
+	knownResults := s.DiscoveryStore.SearchKnown(queryNorm)
+	s.logger.Info("searched known feeds",
+		"query_norm", queryNorm,
+		"results_count", len(knownResults),
+	)
+
+	// Get user key for rate limiting (session ID)
+	userKey := s.sessionManager.Token(r.Context())
+	s.logger.Info("got user key for rate limiting",
+		"user_key", userKey,
+	)
+
+	// Determine if discovery should be triggered
+	shouldDiscover := s.DiscoveryService.ShouldDiscover(userKey, queryNorm, knownResults)
+	s.logger.Info("checked if discovery should be triggered",
+		"should_discover", shouldDiscover,
+		"known_results_count", len(knownResults),
+		"is_url_like", models.IsURLLike(queryNorm),
+	)
+
+	var discoveryID string
+
+	if shouldDiscover {
+		s.logger.Info("starting discovery",
+			"user_key", userKey,
+			"query_norm", queryNorm,
+			"query_raw", query,
+		)
+
+		// Start discovery
+		disc, err := s.DiscoveryService.StartDiscovery(r.Context(), userKey, queryNorm, query)
+		if err != nil {
+			s.logger.Error("failed to start discovery",
+				"query", query,
+				"error", err,
+			)
+		} else {
+			discoveryID = disc.ID
+			s.logger.Info("discovery started successfully",
+				"discovery_id", discoveryID,
+				"status", disc.Status,
+			)
+		}
+	} else {
+		s.logger.Info("skipping discovery - conditions not met")
+	}
+
+	// Check if request wants JSON (for AJAX)
+	if r.Header.Get("Accept") == "application/json" {
+		s.logger.Info("returning JSON response")
+		response := struct {
+			Results     []models.FeedCandidate `json:"results"`
+			DiscoveryID string                 `json:"discovery_id,omitempty"`
+		}{
+			Results:     knownResults,
+			DiscoveryID: discoveryID,
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// Redirect to search page with query and discovery ID
+	redirectURL := "/feeds/search?q=" + query
+	if discoveryID != "" {
+		redirectURL += "&d=" + discoveryID
+	}
+
+	s.logger.Info("redirecting to search page",
+		"redirect_url", redirectURL,
+	)
+
+	http.Redirect(w, r, redirectURL, http.StatusSeeOther)
+}
+
+func (s *Server) handleFeedSuggest(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query().Get("q")
+
+	if query == "" {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode([]models.FeedCandidate{})
+		return
+	}
+
+	suggestions := s.DiscoveryStore.Suggest(query)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(suggestions)
+}
+
+func (s *Server) handleFeedDiscoveryEvents(w http.ResponseWriter, r *http.Request) {
+	// Get discovery ID from URL path
+	discoveryID := r.PathValue("id")
+
+	s.logger.Info("SSE connection request",
+		"discovery_id", discoveryID,
+		"remote_addr", r.RemoteAddr,
+	)
+
+	if discoveryID == "" {
+		s.logger.Warn("SSE request missing discovery ID")
+		http.NotFound(w, r)
+		return
+	}
+
+	// Get last event ID for reconnection
+	lastEventID := r.Header.Get("Last-Event-ID")
+	fromSeq := int64(0)
+	if lastEventID != "" {
+		if seq, err := strconv.ParseInt(lastEventID, 10, 64); err == nil {
+			fromSeq = seq
+		}
+	}
+
+	s.logger.Info("SSE connection established",
+		"discovery_id", discoveryID,
+		"from_seq", fromSeq,
+	)
+
+	// Set SSE headers
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("X-Accel-Buffering", "no") // Disable nginx buffering
+
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		s.logger.Error("streaming not supported")
+		http.Error(w, "Streaming not supported", http.StatusInternalServerError)
+		return
+	}
+
+	// Send initial events
+	events := s.DiscoveryStore.GetDiscoveryEvents(discoveryID, fromSeq)
+	s.logger.Info("sending initial SSE events",
+		"discovery_id", discoveryID,
+		"event_count", len(events),
+	)
+
+	for _, evt := range events {
+		s.logger.Info("sending SSE event",
+			"discovery_id", discoveryID,
+			"event_type", evt.Type,
+			"event_seq", evt.Seq,
+			"message", evt.Message,
+		)
+		s.sendSSEEvent(w, evt)
+		flusher.Flush()
+	}
+
+	// Poll for new events
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
+	timeout := time.After(2 * time.Minute) // 2-minute timeout
+
+	s.logger.Info("starting SSE polling loop", "discovery_id", discoveryID)
+
+	for {
+		select {
+		case <-r.Context().Done():
+			s.logger.Info("SSE client disconnected", "discovery_id", discoveryID)
+			return
+		case <-timeout:
+			s.logger.Info("SSE timeout reached", "discovery_id", discoveryID)
+			return
+		case <-ticker.C:
+			// Get discovery state
+			discovery, ok := s.DiscoveryStore.GetDiscovery(discoveryID)
+			if !ok {
+				s.logger.Warn("discovery not found during SSE polling", "discovery_id", discoveryID)
+				return
+			}
+
+			// Get new events
+			newEvents := s.DiscoveryStore.GetDiscoveryEvents(discoveryID, fromSeq)
+			if len(newEvents) > 0 {
+				s.logger.Info("sending new SSE events",
+					"discovery_id", discoveryID,
+					"event_count", len(newEvents),
+					"discovery_status", discovery.Status,
+				)
+
+				for _, evt := range newEvents {
+					s.logger.Info("sending SSE event",
+						"discovery_id", discoveryID,
+						"event_type", evt.Type,
+						"event_seq", evt.Seq,
+						"message", evt.Message,
+					)
+					s.sendSSEEvent(w, evt)
+					flusher.Flush()
+					fromSeq = evt.Seq
+				}
+			}
+
+			// Send keepalive comment
+			fmt.Fprintf(w, ": keepalive\n\n")
+			flusher.Flush()
+
+			// Exit if discovery is complete
+			if discovery.Status != "pending" {
+				s.logger.Info("discovery complete, closing SSE",
+					"discovery_id", discoveryID,
+					"status", discovery.Status,
+				)
+				return
+			}
+		}
+	}
+}
+
+func (s *Server) sendSSEEvent(w http.ResponseWriter, evt models.DiscoveryEvent) {
+	// Send event ID for reconnection
+	fmt.Fprintf(w, "id: %d\n", evt.Seq)
+
+	// Send event type
+	if evt.Type != "" {
+		fmt.Fprintf(w, "event: %s\n", evt.Type)
+	}
+
+	// Send event data
+	data := struct {
+		Message string                 `json:"message"`
+		Results []models.FeedCandidate `json:"results,omitempty"`
+	}{
+		Message: evt.Message,
+		Results: evt.Results,
+	}
+
+	jsonData, _ := json.Marshal(data)
+	fmt.Fprintf(w, "data: %s\n\n", jsonData)
 }
