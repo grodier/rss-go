@@ -1,5 +1,6 @@
 # Build artifacts
 tmp/
+bin/
 
 # IDE
 .DS_Store
